@@ -1,0 +1,36 @@
+{
+  "folders": [
+    {
+      "name": "Humanoid Robotics Book",
+      "path": "."
+    }
+  ],
+  "settings": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "typescript.preferences.importModuleSpecifier": "relative",
+    "emmet.includeLanguages": {
+      "javascript": "javascriptreact",
+      "typescript": "typescriptreact"
+    },
+    "files.associations": {
+      "*.css": "tailwindcss"
+    },
+    "editor.quickSuggestions": {
+      "strings": true
+    }
+  },
+  "extensions": {
+    "recommendations": [
+      "ms-vscode.vscode-typescript-next",
+      "bradlc.vscode-tailwindcss",
+      "esbenp.prettier-vscode",
+      "dbaeumer.vscode-eslint",
+      "ms-vscode.vscode-json",
+      "yzhang.markdown-all-in-one",
+      "ms-vscode.vscode-react-native-snippets",
+      "formulahendry.auto-rename-tag",
+      "christian-kohler.path-intellisense"
+    ]
+  }
+}

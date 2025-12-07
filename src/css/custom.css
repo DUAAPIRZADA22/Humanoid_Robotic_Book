@@ -1,0 +1,1098 @@
+/* Tailwind CSS imports */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom CSS variables and base styles */
+:root {
+  --ifm-color-primary: #6366f1;
+  --ifm-color-primary-dark: #4f46e5;
+  --ifm-color-primary-darker: #4338ca;
+  --ifm-color-primary-darkest: #3730a3;
+  --ifm-color-primary-light: #818cf8;
+  --ifm-color-primary-lighter: #a5b4fc;
+  --ifm-color-primary-lightest: #c7d2fe;
+
+  --ifm-color-secondary: #8b5cf6;
+  --ifm-color-success: #10b981;
+  --ifm-color-info: #3b82f6;
+  --ifm-color-warning: #f59e0b;
+  --ifm-color-danger: #ef4444;
+
+  --ifm-background-color: #0f172a;
+  --ifm-background-surface-color: #1e293b;
+  --ifm-card-background-color: rgba(30, 41, 59, 0.5);
+
+  --ifm-font-color-base: #f1f5f9;
+  --ifm-font-color-secondary: #94a3b8;
+  --ifm-font-color-emphasis: #e2e8f0;
+
+  --ifm-code-background: #1e293b;
+  --ifm-code-color: #e2e8f0;
+
+  --ifm-table-stripe-background: #1e293b;
+  --ifm-table-border-color: #334155;
+
+  --ifm-color-content: #f1f5f9;
+  --ifm-color-content-secondary: #94a3b8;
+}
+
+/* Dark mode styles */
+html[data-theme='dark'] {
+  --ifm-background-color: #0f172a;
+  --ifm-background-surface-color: #1e293b;
+  --ifm-card-background-color: rgba(30, 41, 59, 0.5);
+  --ifm-font-color-base: #f1f5f9;
+  --ifm-font-color-secondary: #94a3b8;
+  --ifm-font-color-emphasis: #e2e8f0;
+}
+
+/* Light mode styles */
+html[data-theme='light'] {
+  --ifm-background-color: #f8fafc;
+  --ifm-background-surface-color: #ffffff;
+  --ifm-card-background-color: rgba(255, 255, 255, 0.8);
+  --ifm-font-color-base: #0f172a;
+  --ifm-font-color-secondary: #475569;
+  --ifm-font-color-emphasis: #1e293b;
+}
+
+/* Base styles */
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: var(--ifm-background-color);
+  color: var(--ifm-font-color-base);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Global list styles for Docusaurus */
+ul {
+  list-style: disc;
+  padding-left: 2rem;
+  margin-bottom: 1rem;
+}
+
+ul li {
+  margin-bottom: 0.5rem;
+}
+
+ol {
+  list-style: decimal;
+  padding-left: 2rem;
+  margin-bottom: 1rem;
+}
+
+ol li {
+  margin-bottom: 0.5rem;
+}
+
+/* Fix Docusaurus list rendering */
+.navbar__link,
+.menu__link {
+  list-style: none;
+  padding-left: 0;
+}
+
+/* Docusaurus page title specific styles - targeting all possible H1 variants */
+  h1:not(.navbar__link):not(.menu__link):not(.breadcrumbs__item),
+  h1[class*="title"],
+  .theme-doc-title,
+  .article__title,
+  .page-title,
+  .docs-title,
+  .theme-doc-heading {
+    @apply font-extrabold text-5xl md:text-6xl;
+    margin: 3rem 0 1.5rem;
+    padding: 1rem 1.5rem;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    background: linear-gradient(135deg, var(--ifm-color-primary) 0%, var(--ifm-color-primary-dark) 50%, var(--ifm-color-secondary) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    position: relative;
+    display: block !important;
+    transition: all 0.3s ease;
+  }
+
+  h1[class*="title"]::after,
+  .theme-doc-title::after,
+  .article__title::after,
+  .page-title::after,
+  .docs-title::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 0;
+    width: 100px;
+    height: 4px;
+    background: linear-gradient(90deg, var(--ifm-color-primary), var(--ifm-color-secondary));
+    border-radius: 2px;
+  }
+
+  h1[class*="title"]:hover,
+  .theme-doc-title:hover,
+  .article__title:hover,
+  .page-title:hover,
+  .docs-title:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.1);
+  }
+
+  /* Glassmorphism utility classes */
+  @layer utilities {
+  .glass {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  }
+
+  .glass-inset {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.1);
+  }
+}
+
+/* Gradient backgrounds */
+.gradient-bg {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #c471f5 75%, #667eea 100%);
+  background-size: 400% 400%;
+  animation: gradient 15s ease infinite;
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Hero section specific styles */
+.hero__title {
+  font-size: 4rem;
+  font-weight: 800;
+  line-height: 1.2;
+  margin-bottom: 1.5rem;
+}
+
+.hero__subtitle {
+  font-size: 1.5rem;
+  color: var(--ifm-font-color-secondary);
+  margin-bottom: 2rem;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.5);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.7);
+}
+
+/* Code block improvements */
+div[class*='codeBlock'] {
+  border-radius: 0.75rem;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* Table of contents styling */
+@layer components {
+  .table-of-contents {
+    @apply glass rounded-lg p-4;
+  }
+
+  .table-of-contents ul li a {
+    @apply text-slate-300 hover:text-primary-400 transition-colors duration-200;
+  }
+}
+
+/* Navbar customizations */
+.navbar {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  background: rgba(15, 23, 42, 0.8);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Footer customizations */
+.footer {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Card component styles */
+@layer components {
+  .card {
+    @apply glass rounded-xl p-6 transition-all duration-300 hover:bg-white/10 hover:border-white/20 hover:scale-105;
+  }
+
+  /* Button enhancements */
+  .button {
+    @apply px-6 py-3 rounded-lg font-medium transition-all duration-200;
+  }
+
+  .button--primary {
+    @apply bg-gradient-to-r from-primary-500 to-secondary-600 text-white shadow-lg hover:shadow-xl hover:scale-105;
+  }
+
+  .button--secondary {
+    @apply bg-slate-800/50 border border-slate-600 text-slate-300 hover:bg-slate-700/50 hover:border-slate-500;
+  }
+}
+
+/* Enhanced typography and content structure */
+@layer components {
+  .markdown,
+  .theme-doc-markdown {
+    line-height: 1.7;
+    font-size: 1rem;
+  }
+
+  /* Ensure all headings render properly */
+  .theme-doc-markdown h1,
+  .theme-doc-markdown h2,
+  .theme-doc-markdown h3,
+  .theme-doc-markdown h4,
+  .theme-doc-markdown h5,
+  .theme-doc-markdown h6 {
+    display: block !important;
+    font-weight: 600 !important;
+  }
+
+  /* Enhanced heading hierarchy with better visual prominence */
+  h1,
+  .markdown h1,
+  .theme-doc-markdown h1 {
+    @apply font-extrabold text-5xl md:text-6xl;
+    margin: 3rem 0 1.5rem;
+    padding: 1rem 1.5rem;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    background: linear-gradient(135deg, var(--ifm-color-primary) 0%, var(--ifm-color-primary-dark) 50%, var(--ifm-color-secondary) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    position: relative;
+    display: block !important;
+    transition: all 0.3s ease;
+  }
+
+  .markdown h1::after,
+  .theme-doc-markdown h1::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 0;
+    width: 100px;
+    height: 4px;
+    background: linear-gradient(90deg, var(--ifm-color-primary), var(--ifm-color-secondary));
+    border-radius: 2px;
+  }
+
+  .markdown h1:first-child,
+  .theme-doc-markdown h1:first-child {
+    margin-top: 0;
+  }
+
+  .markdown h1:hover,
+  .theme-doc-markdown h1:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.1);
+  }
+
+  .markdown h2,
+  .theme-doc-markdown h2 {
+    @apply font-bold text-4xl md:text-5xl;
+    margin: 3rem 0 1.5rem;
+    padding: 0.75rem 1.25rem;
+    line-height: 1.2;
+    color: var(--ifm-color-emphasis-900);
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%);
+    border-left: 5px solid var(--ifm-color-primary);
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    transition: all 0.3s ease;
+  }
+
+  .markdown h2:hover,
+  .theme-doc-markdown h2:hover {
+    transform: translateX(4px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  }
+
+  .markdown h3,
+  .theme-doc-markdown h3 {
+    @apply font-semibold text-3xl md:text-4xl;
+    margin: 2.5rem 0 1.25rem;
+    padding: 0.5rem 1rem;
+    line-height: 1.3;
+    color: var(--ifm-color-emphasis-900);
+    position: relative;
+    transition: all 0.3s ease;
+  }
+
+  .markdown h3::before,
+  .theme-doc-markdown h3::before {
+    content: '▸';
+    position: absolute;
+    left: -1.5rem;
+    color: var(--ifm-color-primary);
+    font-size: 1.5rem;
+    transition: transform 0.3s ease;
+  }
+
+  .markdown h3:hover::before,
+  .theme-doc-markdown h3:hover::before {
+    transform: translateX(4px);
+  }
+
+  .markdown h3:hover,
+  .theme-doc-markdown h3:hover {
+    color: var(--ifm-color-primary);
+  }
+
+  .markdown h4,
+  .theme-doc-markdown h4 {
+    @apply font-semibold text-2xl md:text-3xl;
+    margin: 2rem 0 1rem;
+    padding: 0.4rem 0.8rem;
+    line-height: 1.35;
+    color: var(--ifm-color-emphasis-900);
+    border-bottom: 3px solid var(--ifm-color-primary-light);
+    display: inline-block;
+    transition: all 0.3s ease;
+  }
+
+  .markdown h4:hover,
+  .theme-doc-markdown h4:hover {
+    border-bottom-width: 5px;
+    color: var(--ifm-color-primary);
+    transform: translateY(-1px);
+  }
+
+  .markdown h5,
+  .theme-doc-markdown h5 {
+    @apply font-semibold text-xl md:text-2xl;
+    margin: 1.75rem 0 0.875rem;
+    padding: 0.3rem 0.6rem;
+    line-height: 1.4;
+    color: var(--ifm-color-emphasis-900);
+    background: rgba(99, 102, 241, 0.08);
+    border-radius: 0.25rem;
+    position: relative;
+    transition: all 0.3s ease;
+  }
+
+  .markdown h5::before,
+  .theme-doc-markdown h5::before {
+    content: '▶';
+    position: absolute;
+    left: -1.2rem;
+    color: var(--ifm-color-primary-light);
+    font-size: 0.8rem;
+    transition: all 0.3s ease;
+  }
+
+  .markdown h5:hover,
+  .theme-doc-markdown h5:hover {
+    background: rgba(99, 102, 241, 0.15);
+    transform: translateX(4px);
+  }
+
+  .markdown h5:hover::before,
+  .theme-doc-markdown h5:hover::before {
+    color: var(--ifm-color-primary);
+    left: -1.4rem;
+  }
+
+  .markdown h6,
+  .theme-doc-markdown h6 {
+    @apply font-semibold text-lg md:text-xl;
+    margin: 1.5rem 0 0.75rem;
+    padding: 0.25rem 0.5rem;
+    line-height: 1.5;
+    color: var(--ifm-color-emphasis-900);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    background: linear-gradient(90deg, rgba(99, 102, 241, 0.1) 0%, transparent 100%);
+    border-left: 3px solid var(--ifm-color-primary-light);
+    transition: all 0.3s ease;
+  }
+
+  .markdown h6:hover,
+  .theme-doc-markdown h6:hover {
+    background: linear-gradient(90deg, rgba(99, 102, 241, 0.2) 0%, transparent 100%);
+    border-left-width: 5px;
+  }
+
+  /* Enhanced paragraph styling */
+  .markdown p,
+  .theme-doc-markdown p {
+    margin-bottom: 1.25rem;
+    line-height: 1.75;
+    text-align: justify;
+    orphans: 2;
+    widows: 2;
+  }
+
+  .markdown .lead,
+  .theme-doc-markdown .lead {
+    @apply text-xl md:text-2xl font-light;
+    line-height: 1.6;
+    color: var(--ifm-color-emphasis-700);
+    margin-bottom: 2rem;
+    padding: 1rem;
+    background: var(--ifm-color-emphasis-100);
+    border-radius: 0.5rem;
+    border-left: 4px solid var(--ifm-color-primary);
+  }
+
+  /* Improved blockquote styling */
+  .markdown blockquote,
+  .theme-doc-markdown blockquote {
+    @apply my-6 p-4 md:p-6 rounded-lg border-l-4;
+    background: linear-gradient(135deg, var(--ifm-color-emphasis-100) 0%, var(--ifm-color-emphasis-50) 100%);
+    border-color: var(--ifm-color-primary);
+    font-style: italic;
+    position: relative;
+  }
+
+  .markdown blockquote p,
+  .theme-doc-markdown blockquote p {
+    margin-bottom: 0;
+    font-size: 1.1rem;
+    line-height: 1.6;
+  }
+
+  .markdown blockquote p::before,
+  .theme-doc-markdown blockquote p::before {
+    content: '"';
+    font-size: 3rem;
+    color: var(--ifm-color-primary);
+    position: absolute;
+    top: -0.5rem;
+    left: 0.5rem;
+    opacity: 0.3;
+  }
+
+  /* Pull quote styling */
+  .markdown .pull-quote,
+  .theme-doc-markdown .pull-quote {
+    @apply text-2xl md:text-3xl font-bold text-center my-8 p-6;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    position: relative;
+  }
+
+  .markdown .pull-quote::before,
+  .markdown .pull-quote::after,
+  .theme-doc-markdown .pull-quote::before,
+  .theme-doc-markdown .pull-quote::after {
+    content: '"';
+    font-size: 4rem;
+    color: var(--ifm-color-primary);
+    position: absolute;
+    opacity: 0.2;
+  }
+
+  .markdown .pull-quote::before,
+  .theme-doc-markdown .pull-quote::before {
+    top: -1rem;
+    left: 0;
+  }
+
+  .markdown .pull-quote::after,
+  .theme-doc-markdown .pull-quote::after {
+    bottom: -2rem;
+    right: 0;
+  }
+
+  /* Default list styles for Docusaurus markdown */
+  .markdown ul {
+    @apply list-disc mb-4 ml-6;
+    padding-left: 1.5rem;
+  }
+
+  .markdown ul li {
+    @apply mb-2 pl-1;
+    margin-left: 0.5rem;
+  }
+
+  .markdown ol {
+    @apply list-decimal mb-4 ml-6;
+    padding-left: 1.5rem;
+  }
+
+  .markdown ol li {
+    @apply mb-2 pl-1;
+    margin-left: 0.5rem;
+  }
+
+  /* Nested lists */
+  .markdown ul ul, .markdown ol ul {
+    @apply mt-2;
+  }
+
+  .markdown ol ol, .markdown ul ol {
+    @apply mt-2;
+  }
+
+  /* Academic list styles */
+  .learning-objectives {
+    @apply list-decimal list-inside mb-6 ml-8;
+  }
+
+  .learning-objectives li {
+    @apply mb-3;
+    counter-increment: objective;
+  }
+
+  .learning-objectives li::marker {
+    @apply font-bold text-primary-400;
+  }
+
+  .step-list {
+    @apply list-none mb-6 ml-0;
+  }
+
+  .step-list li {
+    @apply mb-4 pl-6 relative;
+  }
+
+  .step-list li::before {
+    content: "▶";
+    @apply absolute left-0 text-primary-500;
+  }
+
+  .check-list {
+    @apply list-none mb-6 ml-0;
+  }
+
+  .check-list li {
+    @apply mb-3 pl-6 relative;
+  }
+
+  .check-list li::before {
+    content: "□";
+    @apply absolute left-0 text-primary-500 font-bold;
+  }
+
+  .check-list li.completed::before {
+    content: "☑";
+  }
+
+  /* Ensure proper list rendering in all contexts */
+  article ul, article ol {
+    @apply mb-4;
+  }
+
+  article ul {
+    @apply list-disc;
+    padding-left: 2rem;
+  }
+
+  article ol {
+    @apply list-decimal;
+    padding-left: 2rem;
+  }
+
+  article li {
+    @apply mb-2;
+  }
+
+  /* Docusaurus-specific list fixes */
+  .theme-doc-markdown ul {
+    list-style-type: disc;
+    padding-left: 1.5em;
+    margin-bottom: 1em;
+  }
+
+  .theme-doc-markdown ul li {
+    margin-bottom: 0.5em;
+    padding-left: 0.5em;
+  }
+
+  .theme-doc-markdown ol {
+    list-style-type: decimal;
+    padding-left: 1.5em;
+    margin-bottom: 1em;
+  }
+
+  .theme-doc-markdown ol li {
+    margin-bottom: 0.5em;
+    padding-left: 0.5em;
+  }
+
+  /* Override any conflicting list styles */
+  .theme-doc-markdown menu,
+  .theme-doc-markdown dir {
+    list-style-type: disc;
+    padding-left: 1.5em;
+  }
+
+  /* Knowledge check styling */
+  .knowledge-check {
+    @apply mt-8 p-6 rounded-lg border border-slate-600 bg-slate-800/30;
+  }
+
+  .knowledge-check h3 {
+    @apply text-xl font-bold mb-4 text-primary-400;
+  }
+
+  .multiple-choice {
+    @apply mb-4;
+  }
+
+  .multiple-choice p {
+    @apply font-medium mb-2;
+  }
+
+  .multiple-choice ul {
+    @apply ml-4;
+  }
+
+  .multiple-choice li {
+    @apply mb-2;
+  }
+
+  .multiple-choice li.correct {
+    @apply text-green-400;
+  }
+
+  .multiple-choice li.incorrect {
+    @apply text-red-400;
+  }
+
+  /* Enhanced table styling */
+  .markdown table,
+  .theme-doc-markdown table {
+    @apply w-full my-6 rounded-lg overflow-hidden shadow-lg;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: var(--ifm-background-surface-color);
+    border: 1px solid var(--ifm-color-emphasis-200);
+  }
+
+  .markdown table thead,
+  .theme-doc-markdown table thead {
+    background: linear-gradient(135deg, var(--ifm-color-primary) 0%, var(--ifm-color-primary-dark) 100%);
+    color: white;
+  }
+
+  .markdown table th,
+  .theme-doc-markdown table th {
+    @apply px-6 py-4 text-left font-semibold;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 0.875rem;
+  }
+
+  .markdown table tbody tr,
+  .theme-doc-markdown table tbody tr {
+    @apply border-t border-t-gray-200 dark:border-t-gray-700;
+    transition: all 0.2s ease;
+  }
+
+  .markdown table tbody tr:nth-child(even),
+  .theme-doc-markdown table tbody tr:nth-child(even) {
+    background: var(--ifm-color-emphasis-100);
+  }
+
+  .markdown table tbody tr:hover,
+  .theme-doc-markdown table tbody tr:hover {
+    background: var(--ifm-color-primary-lightest);
+    transform: scale(1.01);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .markdown table td,
+  .theme-doc-markdown table td {
+    @apply px-6 py-4;
+    border-top: 1px solid var(--ifm-color-emphasis-200);
+  }
+
+  /* Responsive table wrapper */
+  .markdown table,
+  .theme-doc-markdown table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Table caption styling */
+  .markdown table caption,
+  .theme-doc-markdown table caption {
+    @apply text-sm text-gray-600 dark:text-gray-400 mt-2 mb-4 text-center italic;
+    caption-side: bottom;
+  }
+
+  /* Code in tables */
+  .markdown table code,
+  .theme-doc-markdown table code {
+    @apply text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded;
+  }
+
+  /* Image optimizations */
+  img {
+    @apply rounded-lg shadow-lg;
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* Figure caption styling */
+  .markdown figure,
+  .theme-doc-markdown figure {
+    @apply my-6;
+  }
+
+  .markdown figcaption,
+  .theme-doc-markdown figcaption {
+    @apply text-sm text-center text-gray-600 dark:text-gray-400 mt-2 italic;
+  }
+
+  /* Horizontal rule styling */
+  .markdown hr,
+  .theme-doc-markdown hr {
+    @apply my-8 border-0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--ifm-color-primary), transparent);
+  }
+
+  /* Admonition improvements */
+  .admonition {
+    @apply rounded-lg;
+  }
+
+  .admonition-content {
+    @apply text-base;
+  }
+
+  /* Definition lists */
+  .markdown dl,
+  .theme-doc-markdown dl {
+    @apply my-6;
+  }
+
+  .markdown dt,
+  .theme-doc-markdown dt {
+    @apply font-semibold text-lg mb-2 text-primary-600;
+  }
+
+  .markdown dd,
+  .theme-doc-markdown dd {
+    @apply ml-6 mb-4 pl-4 border-l-2 border-gray-300;
+  }
+
+  .admonition--info {
+    @apply border-l-4 border-blue-500;
+  }
+
+  .admonition--warning {
+    @apply border-l-4 border-yellow-500;
+  }
+
+  .admonition--danger {
+    @apply border-l-4 border-red-500;
+  }
+
+  .admonition--success {
+    @apply border-l-4 border-green-500;
+  }
+}
+
+/* Improved link styling */
+  .markdown a,
+  .theme-doc-markdown a {
+    @apply text-primary-600 dark:text-primary-400 font-medium relative;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    position: relative;
+  }
+
+  .markdown a:hover,
+  .theme-doc-markdown a:hover {
+    @apply text-primary-700 dark:text-primary-300;
+    transform: translateY(-1px);
+  }
+
+  .markdown a::after,
+  .theme-doc-markdown a::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: var(--ifm-color-primary);
+    transition: width 0.3s ease;
+  }
+
+  .markdown a:hover::after,
+  .theme-doc-markdown a:hover::after {
+    width: 100%;
+  }
+
+  /* External link indicators */
+  .markdown a[target="_blank"]::before,
+  .theme-doc-markdown a[target="_blank"]::before {
+    content: '↗';
+    display: inline-block;
+    margin-right: 0.25em;
+    font-size: 0.8em;
+    opacity: 0.7;
+  }
+
+  /* Inline code styling */
+  .markdown code:not(pre code),
+  .theme-doc-markdown code:not(pre code) {
+    @apply bg-gray-100 dark:bg-gray-800 text-pink-600 dark:text-pink-400 px-2 py-1 rounded-md text-sm font-mono;
+    border: 1px solid var(--ifm-color-emphasis-200);
+  }
+
+  /* Keyboard shortcuts styling */
+  .markdown kbd,
+  .theme-doc-markdown kbd {
+    @apply bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-xs font-mono shadow-sm;
+  }
+
+  /* Mark/highlight styling */
+  .markdown mark,
+  .theme-doc-markdown mark {
+    @apply bg-yellow-200 dark:bg-yellow-800 px-1 rounded;
+  }
+
+  /* Superscript and subscript */
+  .markdown sup,
+  .theme-doc-markdown sup {
+    @apply text-xs align-super text-gray-500;
+  }
+
+  .markdown sub,
+  .theme-doc-markdown sub {
+    @apply text-xs align-sub text-gray-500;
+  }
+
+  /* Small print */
+  .markdown small,
+  .theme-doc-markdown small {
+    @apply text-sm text-gray-600 dark:text-gray-400;
+  }
+
+  /* Responsive typography */
+  @media (max-width: 640px) {
+    h1,
+    .markdown h1,
+    .theme-doc-markdown h1,
+    h1[class*="title"],
+    .theme-doc-title,
+    .article__title,
+    .page-title,
+    .docs-title {
+      @apply text-4xl;
+      margin: 2rem 0 1rem;
+      padding: 0.75rem 1rem;
+    }
+
+    .markdown h1::after,
+    .theme-doc-markdown h1::after,
+    h1[class*="title"]::after,
+    .theme-doc-title::after,
+    .article__title::after,
+    .page-title::after,
+    .docs-title::after {
+      width: 60px;
+    }
+
+    .markdown h2,
+    .theme-doc-markdown h2 {
+      @apply text-3xl;
+      margin: 2rem 0 1rem;
+      padding: 0.5rem 0.75rem;
+    }
+
+    .markdown h3,
+    .theme-doc-markdown h3 {
+      @apply text-2xl;
+      margin: 1.75rem 0 0.875rem;
+      padding: 0.4rem 0.6rem;
+    }
+
+    .markdown h3::before,
+    .theme-doc-markdown h3::before {
+      left: -1.2rem;
+      font-size: 1.2rem;
+    }
+
+    .markdown h4,
+    .theme-doc-markdown h4 {
+      @apply text-xl;
+      margin: 1.5rem 0 0.75rem;
+      padding: 0.3rem 0.5rem;
+    }
+
+    .markdown h5,
+    .theme-doc-markdown h5 {
+      @apply text-lg;
+      margin: 1.25rem 0 0.625rem;
+      padding: 0.25rem 0.4rem;
+    }
+
+    .markdown h5::before,
+    .theme-doc-markdown h5::before {
+      left: -1rem;
+      font-size: 0.7rem;
+    }
+
+    .markdown h6,
+    .theme-doc-markdown h6 {
+      @apply text-base;
+      margin: 1rem 0 0.5rem;
+      padding: 0.2rem 0.3rem;
+    }
+
+    .markdown .lead,
+    .theme-doc-markdown .lead {
+      @apply text-lg;
+    }
+
+    .markdown .pull-quote,
+    .theme-doc-markdown .pull-quote {
+      @apply text-xl;
+    }
+
+    .markdown table,
+    .theme-doc-markdown table {
+      font-size: 0.875rem;
+    }
+
+    .markdown table th,
+    .markdown table td,
+    .theme-doc-markdown table th,
+    .theme-doc-markdown table td {
+      @apply px-3 py-2;
+    }
+  }
+
+  /* Tablet styles for headings */
+  @media (min-width: 641px) and (max-width: 768px) {
+    h1,
+    .markdown h1,
+    .theme-doc-markdown h1,
+    h1[class*="title"],
+    .theme-doc-title,
+    .article__title,
+    .page-title,
+    .docs-title {
+      @apply text-5xl;
+    }
+
+    .markdown h2,
+    .theme-doc-markdown h2 {
+      @apply text-4xl;
+    }
+
+    .markdown h3,
+    .theme-doc-markdown h3 {
+      @apply text-3xl;
+    }
+
+    .markdown h4,
+    .theme-doc-markdown h4 {
+      @apply text-2xl;
+    }
+
+    .markdown h5,
+    .theme-doc-markdown h5 {
+      @apply text-xl;
+    }
+
+    .markdown h6,
+    .theme-doc-markdown h6 {
+      @apply text-lg;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .hero__title {
+      font-size: 3rem;
+    }
+
+    .hero__subtitle {
+      font-size: 1.25rem;
+    }
+
+    /* Responsive tables for mobile */
+    .markdown table,
+    .theme-doc-markdown table {
+      display: block;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      -ms-overflow-style: -ms-autohiding-scrollbar;
+    }
+
+    /* Stack definition lists on mobile */
+    .markdown dd,
+    .theme-doc-markdown dd {
+      @apply ml-0 pl-0 border-l-0;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .markdown,
+    .theme-doc-markdown {
+      font-size: 1.125rem;
+      line-height: 1.8;
+    }
+  }
+
+/* Animation utilities */
+.animate-on-scroll {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.animate-on-scroll.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Print styles */
+@media print {
+  .navbar,
+  .footer,
+  .pagination-nav,
+  .theme-edit-this-page {
+    display: none;
+  }
+
+  body {
+    font-size: 12pt;
+    line-height: 1.4;
+  }
+
+  .markdown {
+    max-width: none;
+  }
+}

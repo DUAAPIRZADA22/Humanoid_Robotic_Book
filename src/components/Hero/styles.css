@@ -1,0 +1,169 @@
+.hero {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 30%, #e2e8f0 70%, #f1f5f9 100%);
+}
+
+.hero-gradient {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(59, 130, 246, 0.08) 0%,
+    rgba(139, 92, 246, 0.08) 25%,
+    rgba(236, 72, 153, 0.08) 50%,
+    rgba(59, 130, 246, 0.08) 75%,
+    rgba(139, 92, 246, 0.08) 100%
+  );
+  background-size: 400% 400%;
+  animation: gradient 20s ease infinite;
+}
+
+.hero-content {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+.hero-title {
+  font-size: 4rem;
+  font-weight: 800;
+  line-height: 1.2;
+  margin-bottom: 1.5rem;
+  background: linear-gradient(135deg, #1e293b 0%, #3b82f6 50%, #8b5cf6 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: fadeIn 0.8s ease-out;
+}
+
+.hero-subtitle {
+  font-size: 1.5rem;
+  color: #64748b;
+  margin-bottom: 2rem;
+  font-weight: 500;
+  animation: fadeIn 0.8s ease-out 0.2s both;
+}
+
+.hero-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  animation: fadeIn 0.8s ease-out 0.4s both;
+}
+
+.hero-button {
+  min-width: 160px;
+}
+
+.hero-animation {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.floating-card {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  min-width: 180px;
+  text-align: center;
+  animation: float 6s ease-in-out infinite;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.floating-card:nth-child(1) {
+  top: 20%;
+  left: 10%;
+}
+
+.floating-card:nth-child(2) {
+  top: 30%;
+  right: 10%;
+}
+
+.floating-card:nth-child(3) {
+  bottom: 30%;
+  left: 20%;
+}
+
+.card-icon {
+  font-size: 3rem;
+  margin-bottom: 0.5rem;
+}
+
+.card-title {
+  color: #475569;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+/* Responsive design */
+@media (max-width: 996px) {
+  .hero-title {
+    font-size: 3rem;
+  }
+
+  .hero-subtitle {
+    font-size: 1.25rem;
+  }
+
+  .floating-card {
+    min-width: 140px;
+    padding: 1rem;
+  }
+
+  .floating-card:nth-child(1) {
+    top: 15%;
+    left: 5%;
+  }
+
+  .floating-card:nth-child(2) {
+    top: 60%;
+    right: 5%;
+  }
+
+  .floating-card:nth-child(3) {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .hero-title {
+    font-size: 2.5rem;
+  }
+
+  .hero-subtitle {
+    font-size: 1.125rem;
+  }
+
+  .hero-buttons {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .hero-button {
+    width: 100%;
+    max-width: 300px;
+  }
+}

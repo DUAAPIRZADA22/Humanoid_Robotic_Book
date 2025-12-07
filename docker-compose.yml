@@ -1,0 +1,85 @@
+version: '3.8'
+
+services:
+  humanoid-robotics-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        USERNAME: rosdev
+        USER_UID: 1000
+        USER_GID: 1000
+    image: humanoid-robotics-dev:latest
+    container_name: humanoid-robotics-dev
+    stdin_open: true
+    tty: true
+    environment:
+      - DISPLAY=${DISPLAY}
+      - ROS_DOMAIN_ID=1
+      - PYTHONPATH=/home/rosdev/workspace/src:/home/rosdev/.local/lib/python3.8/site-packages
+    volumes:
+      # Mount the workspace for development
+      - ./docs:/home/rosdev/workspace/src/humanoid_robotic_book/docs
+      - ./examples:/home/rosdev/workspace/src/humanoid_robotic_book/examples
+      - ./specs:/home/rosdev/workspace/src/humanoid_robotic_book/specs
+      - ./src:/home/rosdev/workspace/src/humanoid_robotic_book/src
+      - ./static:/home/rosdev/workspace/src/humanoid_robotic_book/static
+      # Mount X11 socket for GUI applications
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      # Mount .bashrc for persistence
+      - ~/.bashrc:/home/rosdev/.bashrc:rw
+      # Mount Jupyter configurations
+      - ~/.jupyter:/home/rosdev/.jupyter:rw
+    networks:
+      - ros-network
+    ports:
+      - "8888:8888"  # Jupyter notebook
+      - "8080:8080"  # Web services
+    # GPU support if available
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    working_dir: /home/rosdev/workspace
+    command: bash
+
+  # Optional: ROS 2 bridge service for external connections
+  ros2-bridge:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: humanoid-robotics-dev:latest
+    container_name: humanoid-robotics-bridge
+    profiles: ["bridge"]
+    environment:
+      - ROS_DOMAIN_ID=1
+    volumes:
+      - ./examples:/home/rosdev/workspace/src/humanoid_robotic_book/examples
+    networks:
+      - ros-network
+    ports:
+      - "9090:9090"  # ROS 2 bridge
+    command: ros2 run rosbridge_server rosbridge_websocket_node
+
+  # Optional: Jupyter service for dedicated notebook access
+  jupyter:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: humanoid-robotics-dev:latest
+    container_name: humanoid-robotics-jupyter
+    profiles: ["jupyter"]
+    volumes:
+      - ./docs:/home/rosdev/workspace/src/humanoid_robotic_book/docs
+      - ./examples:/home/rosdev/workspace/src/humanoid_robotic_book/examples
+      - ~/.jupyter:/home/rosdev/.jupyter:rw
+    ports:
+      - "8888:8888"
+    command: jupyter notebook --ip=0.0.0.0 --port=8888 --no-browser --allow-root --NotebookApp.token='' --NotebookApp.password=''
+
+networks:
+  ros-network:
+    driver: bridge
