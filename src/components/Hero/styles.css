@@ -201,11 +201,12 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 2rem;
-  max-width: 900px;
+  max-width: 1000px;
   width: 100%;
   padding: 0 2rem;
   opacity: 0.6;
   animation: float 20s ease-in-out infinite;
+  margin-top: 2rem;
 }
 
 .hero-card {
@@ -215,8 +216,12 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 1rem;
   padding: 2rem;
+  min-height: 180px;
   transition: all 0.3s ease;
   animation: cardFloat 6s ease-in-out infinite;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 .hero-card:nth-child(2) {
@@ -237,11 +242,13 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
+  flex-shrink: 0;
 }
 
 .card-icon {
   font-size: 2.5rem;
+  line-height: 1;
 }
 
 .card-badge {
@@ -252,6 +259,15 @@
   padding: 0.25rem 0.75rem;
   border-radius: 1rem;
   border: 1px solid rgba(59, 130, 246, 0.3);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.card-content {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .card-content h3 {
@@ -259,12 +275,16 @@
   font-weight: 700;
   color: #f1f5f9;
   margin-bottom: 0.5rem;
+  line-height: 1.3;
+  word-break: break-word;
 }
 
 .card-content p {
   font-size: 0.9rem;
   color: #94a3b8;
   margin: 0;
+  line-height: 1.4;
+  word-break: break-word;
 }
 
 .book-card {
@@ -324,7 +344,13 @@
 
   .hero-card-container {
     grid-template-columns: repeat(2, 1fr);
-    max-width: 600px;
+    max-width: 700px;
+    gap: 1.5rem;
+  }
+
+  .hero-card {
+    min-height: 160px;
+    padding: 1.5rem;
   }
 
   .hero-card:nth-child(3) {
@@ -356,7 +382,32 @@
   }
 
   .hero-card-container {
-    display: none;
+    grid-template-columns: 1fr;
+    max-width: 400px;
+    gap: 1rem;
+    display: grid;
+  }
+
+  .hero-card {
+    min-height: 140px;
+    padding: 1.25rem;
+  }
+
+  .hero-card:nth-child(2),
+  .hero-card:nth-child(3) {
+    display: flex;
+  }
+
+  .card-header {
+    margin-bottom: 0.75rem;
+  }
+
+  .card-icon {
+    font-size: 2rem;
+  }
+
+  .card-content h3 {
+    font-size: 1.1rem;
   }
 
   .hero-stats {
