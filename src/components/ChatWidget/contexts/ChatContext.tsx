@@ -14,6 +14,8 @@ import { saveToStorage, loadFromStorage } from '../utils/storage';
 interface ChatContextValue {
   /** Current chat state */
   state: ChatState;
+  /** Dispatch function for state updates */
+  dispatch: React.Dispatch<any>;
   /** Send a message to the chat */
   sendMessage: (content: string, metadata?: ChatMessage['metadata']) => Promise<void>;
   /** Clear all messages */
@@ -142,6 +144,7 @@ export function ChatProvider({ children, initialState }: ChatProviderProps): JSX
 
   const contextValue: ChatContextValue = {
     state,
+    dispatch,
     sendMessage,
     clearMessages,
     retryLastMessage,
