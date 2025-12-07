@@ -11,16 +11,15 @@ const config = {
   favicon: 'img/favicon.ico',
 
   // Set the production url of your site here
-  url: 'https://example.github.io',
+  url: 'https://humanoid-robotic-book.vercel.app',
   // Set the /<baseUrl>/ pathname under which your site is served
-  // For GitHub pages deployment, it is often '/<projectName>/'
-  baseUrl: '/humanoid_robotic_book/',
+  // For Vercel deployment, use root path
+  baseUrl: '/',
 
-  // GitHub pages deployment config.
-  // If you aren't using GitHub pages, you don't need these.
-  organizationName: 'example', // Usually your GitHub org/user name.
-  projectName: 'humanoid_robotic_book', // Usually your repo name.
-  deploymentBranch: 'gh-pages',
+  // Vercel deployment config.
+  organizationName: 'DUAAPIRZADA22', // Your GitHub org/user name.
+  projectName: 'Humanoid_Robotic_Book', // Your repo name.
+  deploymentBranch: 'main',
 
   onBrokenLinks: 'throw',
   markdown: {
@@ -47,7 +46,7 @@ const config = {
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl:
-            'https://github.com/example/humanoid_robotic_book/tree/main/',
+            'https://github.com/DUAAPIRZADA22/Humanoid_Robotic_Book/tree/main/',
         },
           theme: {
           customCss: './src/css/custom.css',
@@ -75,7 +74,7 @@ const config = {
             label: 'Course',
           },
             {
-            href: 'https://github.com/example/humanoid_robotic_book',
+            href: 'https://github.com/DUAAPIRZADA22/Humanoid_Robotic_Book',
             label: 'GitHub',
             position: 'right',
           },
@@ -108,7 +107,7 @@ const config = {
             items: [
               {
                 label: 'GitHub',
-                href: 'https://github.com/example/humanoid_robotic_book',
+                href: 'https://github.com/DUAAPIRZADA22/Humanoid_Robotic_Book',
               },
             ],
           },
