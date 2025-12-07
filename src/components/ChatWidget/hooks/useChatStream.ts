@@ -6,7 +6,7 @@
 import { useCallback, useRef, useEffect } from 'react';
 import { useChatContext } from '../contexts/ChatContext';
 import { createApiClient, streamChatMessage } from '../utils/api';
-import { useDocusaurusContext } from '@docusaurus/useDocusaurusContext';
+import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import { chatActions } from '../contexts/chatReducer';
 
 /**

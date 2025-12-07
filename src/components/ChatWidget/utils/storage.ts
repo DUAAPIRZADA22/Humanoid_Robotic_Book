@@ -48,6 +48,11 @@ export function saveToStorage(
   settings: SessionSettings = DEFAULT_SETTINGS
 ): void {
   try {
+    // Check if localStorage is available (SSR safe)
+    if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+      return;
+    }
+
     // Limit messages to maxMessages setting
     const limitedMessages = messages.slice(-settings.maxMessages);
 
@@ -81,6 +86,11 @@ export function loadFromStorage(): {
   settings: SessionSettings;
 } | null {
   try {
+    // Check if localStorage is available (SSR safe)
+    if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+      return null;
+    }
+
     const encrypted = localStorage.getItem(STORAGE_KEY);
     if (!encrypted) {
       return null;
@@ -121,6 +131,11 @@ export function loadFromStorage(): {
  */
 export function clearStorage(): void {
   try {
+    // Check if localStorage is available (SSR safe)
+    if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+      return;
+    }
+
     localStorage.removeItem(STORAGE_KEY);
   } catch (error) {
     console.error('Failed to clear storage:', error);
@@ -133,6 +148,11 @@ export function clearStorage(): void {
  */
 export function isStorageAvailable(): boolean {
   try {
+    // Check if localStorage is available (SSR safe)
+    if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+      return false;
+    }
+
     const test = 'test';
     localStorage.setItem(test, test);
     localStorage.removeItem(test);
@@ -148,6 +168,11 @@ export function isStorageAvailable(): boolean {
  */
 export function getStorageSize(): number {
   try {
+    // Check if localStorage is available (SSR safe)
+    if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+      return 0;
+    }
+
     const encrypted = localStorage.getItem(STORAGE_KEY);
     return encrypted ? new Blob([encrypted]).size : 0;
   } catch {

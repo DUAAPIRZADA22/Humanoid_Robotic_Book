@@ -11,6 +11,7 @@ import Prerequisites from '@site/src/components/Prerequisites';
 import ChaptersOverview from '@site/src/components/ChaptersOverview';
 import CourseTimeline from '@site/src/components/CourseTimeline';
 import Footer from '@site/src/components/Footer';
+import ChatWidget from '@site/src/components/ChatWidget';
 
 function HomepageHeader() {
   const {siteConfig} = useDocusaurusContext();
@@ -39,6 +40,7 @@ export default function Home() {
         <CourseTimeline />
       </main>
       <Footer />
+      <ChatWidget />
     </Layout>
   );
 }

@@ -5,7 +5,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useChatContext } from '../contexts/ChatContext';
-import MessageBubble from './MessageBubble';
+import { MessageBubble } from './MessageBubble';
 import MessageInput from './MessageInput';
 import ThinkingIndicator from './ThinkingIndicator';
 import styles from '../styles/ChatWidget.module.css';

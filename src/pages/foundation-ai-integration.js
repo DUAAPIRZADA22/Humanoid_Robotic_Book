@@ -2,6 +2,7 @@ import React from 'react';
 import Layout from '@theme/Layout';
 import Link from '@docusaurus/Link';
 import styles from './foundation-ai-integration.module.css';
+import ChatWidget from '@site/src/components/ChatWidget';
 
 export default function FoundationAIIntegration() {
   return (
@@ -236,6 +237,7 @@ export default function FoundationAIIntegration() {
           </div>
         </section>
       </div>
+      <ChatWidget />
     </Layout>
   );
 }

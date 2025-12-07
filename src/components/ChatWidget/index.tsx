@@ -7,7 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { ChatProvider } from './contexts/ChatContext';
 import { useChatStream } from './hooks/useChatStream';
 import { useTextSelection } from './hooks/useTextSelection';
-import ChatInterface from './components/ChatInterface';
+import { ChatInterface } from './components/ChatInterface';
 import SelectionPopover from './components/SelectionPopover';
 import styles from './styles/ChatWidget.module.css';
 
@@ -186,7 +186,7 @@ export { ChatProvider } from './contexts/ChatContext';
 export { useChatContext } from './contexts/ChatContext';
 export { useChatStream } from './hooks/useChatStream';
 export { useTextSelection } from './hooks/useTextSelection';
-export { default as MessageBubble } from './components/MessageBubble';
+export { MessageBubble } from './components/MessageBubble';
 export { default as MessageInput } from './components/MessageInput';
 export { default as ThinkingIndicator } from './components/ThinkingIndicator';
 export { default as SelectionPopover } from './components/SelectionPopover';
