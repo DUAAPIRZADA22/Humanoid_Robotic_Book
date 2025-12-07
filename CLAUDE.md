@@ -212,6 +212,8 @@ See `.specify/memory/constitution.md` for code quality, testing, performance, se
 ## Active Technologies
 - Markdown (Docusaurus), Python 3.8+, C++17, ROS 2 Humble + Docusaurus 3.x, Mermaid.js for diagrams, NVIDIA Isaac Sim 2024.1.0, ORB-SLAM3, Nav2, Stable-Baselines3, PyBullet, OpenCLIP (001-textbook-completion)
 - Markdown files in docs/ directory, code examples in examples/ directory, images in static/images/ (001-textbook-completion)
+- TypeScript 5.x with React 18 + React, Docusaurus 3.x, Tailwind CSS, lucide-react, react-markdown, framer-motion, remark-gfm, crypto-js (003-chat-widget-frontend)
+- Encrypted localStorage (AES-256) (003-chat-widget-frontend)
 
 ## Recent Changes
 - 001-textbook-completion: Added Markdown (Docusaurus), Python 3.8+, C++17, ROS 2 Humble + Docusaurus 3.x, Mermaid.js for diagrams, NVIDIA Isaac Sim 2024.1.0, ORB-SLAM3, Nav2, Stable-Baselines3, PyBullet, OpenCLIP

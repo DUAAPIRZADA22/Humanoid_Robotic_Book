@@ -73,7 +73,12 @@ const config = {
             position: 'left',
             label: 'Course',
           },
-            {
+          {
+            to: '/foundation-ai-integration',
+            position: 'left',
+            label: 'AI Integration',
+          },
+          {
             href: 'https://github.com/DUAAPIRZADA22/Humanoid_Robotic_Book',
             label: 'GitHub',
             position: 'right',
@@ -93,6 +98,10 @@ const config = {
               {
                 label: 'Module 1: Foundations',
                 to: '/docs/module-1/foundations',
+              },
+              {
+                label: 'AI Integration',
+                to: '/foundation-ai-integration',
               },
             ], 
 
@@ -142,7 +151,8 @@ const config = {
 
   // Custom fields for your site
   customFields: {
-    // Add your custom fields here
+    chatApiEndpoint: process.env.CHAT_API_ENDPOINT || 'http://localhost:7860/api/v1',
+    chatApiKey: process.env.CHAT_API_KEY || 'your-api-key',
   },
 };
 

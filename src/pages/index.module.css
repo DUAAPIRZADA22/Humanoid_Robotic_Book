@@ -38,9 +38,10 @@
 
 /* Homepage main styling */
 .homepageMain {
-  background: #ffffff;
+  background: var(--ifm-background-color);
   min-height: auto;
   position: relative;
+  transition: background-color 0.3s ease;
 }
 
 .homepageMain::before {
