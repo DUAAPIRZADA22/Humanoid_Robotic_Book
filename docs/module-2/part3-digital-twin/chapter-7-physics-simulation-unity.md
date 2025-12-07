@@ -1,6 +1,6 @@
 
 
----
+69i8951 q---
 slug: /module-2/part3-digital-twin/chapter-7-physics-simulation-unity
 title: "Chapter 7: Physics Simulation & Unity Integration"
 description: "Advanced physics simulation techniques, multi-engine simulation, and Unity integration for high-fidelity robotics digital twins."
