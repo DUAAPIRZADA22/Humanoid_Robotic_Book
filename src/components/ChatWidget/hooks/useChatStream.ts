@@ -30,10 +30,14 @@ export function useChatStream(): UseChatStreamReturn {
   const { siteConfig } = useDocusaurusContext();
   const cleanupRef = useRef<(() => void) | null>(null);
 
+  // Check if API configuration is available
+  const chatApiEndpoint = siteConfig?.customFields?.chatApiEndpoint;
+  const chatApiKey = siteConfig?.customFields?.chatApiKey;
+
   // Create API client from Docusaurus config
   const apiClient = createApiClient(
-    siteConfig.customFields.chatApiEndpoint as string,
-    siteConfig.customFields.chatApiKey as string
+    chatApiEndpoint,
+    chatApiKey
   );
 
   /**
@@ -90,6 +94,17 @@ export function useChatStream(): UseChatStreamReturn {
     content: string,
     metadata?: any
   ): Promise<void> => {
+    // Check if API is configured
+    if (!chatApiEndpoint || !chatApiKey) {
+      dispatch(chatActions.setError({
+        code: 'CONFIGURATION_ERROR',
+        message: 'Chat API is not configured. Please set CHAT_API_ENDPOINT and CHAT_API_KEY environment variables.',
+        retryable: false,
+        timestamp: new Date(),
+      }));
+      return;
+    }
+
     // Set loading state
     dispatch(chatActions.setLoading(true));
 

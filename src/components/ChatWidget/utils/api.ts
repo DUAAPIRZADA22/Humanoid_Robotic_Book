@@ -346,14 +346,14 @@ export async function checkHealth(
  * @returns Configured API client
  */
 export function createApiClient(
-  endpoint: string,
-  apiKey: string,
+  endpoint?: string | null,
+  apiKey?: string | null,
   options: Partial<ApiConfig> = {}
 ): ApiConfig {
   return {
     ...DEFAULT_CONFIG,
     ...options,
-    endpoint,
-    apiKey,
+    endpoint: endpoint || null,
+    apiKey: apiKey || null,
   };
 }
