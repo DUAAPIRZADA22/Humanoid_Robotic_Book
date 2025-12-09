@@ -34,14 +34,18 @@ railway up
 1. **Go to [railway.app](https://railway.app)**
 2. **Click "New Project" → "Deploy from GitHub repo"**
 3. **Select your repository**
-4. **Important: Set Root Directory to `backend`**
-   - In project settings → Variables
-   - Set `ROOT_DIRECTORY` = `backend`
-   - Or during setup, specify "Root Path" = `backend`
-5. **Add Environment Variables (optional):**
+4. **⚠️ CRITICAL: Set Root Directory to `backend`**
+   - In project settings → Build Settings
+   - Set "Root Directory" = `backend`
+   - This forces Railway to ignore the root Dockerfile
+5. **Verify Build Settings:**
+   - Builder: Nixpacks (recommended)
+   - Start Command: `gunicorn app:app --bind 0.0.0.0:$PORT --workers 4 --timeout 120`
+6. **Add Environment Variables:**
    - `PORT`: `7860`
-   - `FLASK_ENV`: `production`
-6. **Deploy**
+   - `PYTHONUNBUFFERED`: `1`
+   - `PYTHONDONTWRITEBYTECODE`: `1`
+7. **Deploy**
 
 ## 🔧 Configuration Details
 
@@ -71,10 +75,26 @@ Once deployed:
 ## 🐛 Troubleshooting
 
 If deployment fails:
+
+### **ISSUE: Railway using wrong Dockerfile**
+**Error**: Shows Ubuntu/ROS installation instead of Python
+**Solution**:
+1. Go to Railway project → Settings → Build Settings
+2. Set "Root Directory" to `backend`
+3. Delete the deployment and redeploy
+
+### **ISSUE: Root directory not respected**
+**Solution**:
+1. In Railway dashboard → Project Settings → Variables
+2. Add `ROOT_DIRECTORY` = `backend`
+3. Or use Railway CLI: `railway variables set ROOT_DIRECTORY=backend`
+
+### **Other Issues**:
 1. **Check root directory**: Make sure it's set to `backend`
-2. **Verify files**: Ensure `Dockerfile` exists in `backend/` directory
+2. **Verify files**: Ensure `app.py` and `requirements.txt` exist in `backend/` directory
 3. **Check logs**: Use Railway dashboard logs for error details
 4. **Port issues**: Make sure app listens on `$PORT` environment variable
+5. **Builder issues**: Switch to "Nixpacks" builder instead of Dockerfile
 
 ## 🧪 Local Testing
 
