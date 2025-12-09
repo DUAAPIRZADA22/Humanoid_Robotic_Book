@@ -6,6 +6,7 @@ A Flask-based API that provides mock AI responses for the humanoid robotics chat
 from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
 import json
+import os
 import time
 import random
 from datetime import datetime
