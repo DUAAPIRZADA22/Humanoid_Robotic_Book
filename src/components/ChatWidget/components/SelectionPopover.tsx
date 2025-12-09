@@ -30,6 +30,11 @@ export default function SelectionPopover({
    * Handle click outside to close popover
    */
   useEffect(() => {
+    // Only run on client side
+    if (typeof window === 'undefined') {
+      return;
+    }
+
     const handleClickOutside = (event: MouseEvent) => {
       if (
         popoverRef.current &&

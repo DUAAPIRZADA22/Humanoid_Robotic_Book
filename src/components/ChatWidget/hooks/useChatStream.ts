@@ -95,13 +95,39 @@ export function useChatStream(): UseChatStreamReturn {
     metadata?: any
   ): Promise<void> => {
     // Check if API is configured
-    if (!chatApiEndpoint || !chatApiKey) {
-      dispatch(chatActions.setError({
-        code: 'CONFIGURATION_ERROR',
-        message: 'Chat API is not configured. Please set CHAT_API_ENDPOINT and CHAT_API_KEY environment variables.',
-        retryable: false,
+    if (!chatApiEndpoint || !chatApiKey || chatApiEndpoint.includes('localhost:7860')) {
+      // Create a mock response when no backend is available
+      dispatch(chatActions.setLoading(true));
+
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Add user message
+      dispatch(chatActions.addMessage({
+        id: `user_${Date.now()}`,
+        content,
+        type: 'user',
         timestamp: new Date(),
       }));
+
+      // Create mock bot response
+      const mockResponses = [
+        "I'm a demo chatbot! The backend API is not currently running, so I can't provide intelligent responses. To enable full functionality, please start the chatbot backend server or configure the API endpoints.",
+        "Hello! This is a demonstration of the chat widget interface. To get actual AI responses, you'll need to run the backend chatbot service that connects to your AI model.",
+        "Thanks for your message! The chatbot backend is currently offline. You can start it by running the Python chatbot server from the project's backend directory, or configure the API endpoints in your environment variables."
+      ];
+
+      const mockResponse = mockResponses[Math.floor(Math.random() * mockResponses.length)];
+
+      // Add bot response
+      dispatch(chatActions.addMessage({
+        id: `bot_${Date.now()}`,
+        content: mockResponse,
+        type: 'bot',
+        timestamp: new Date(),
+      }));
+
+      dispatch(chatActions.setLoading(false));
       return;
     }
 
@@ -118,7 +144,7 @@ export function useChatStream(): UseChatStreamReturn {
     const request = {
       question: content,
       stream: true,
-      context: metadata?.selectedText ? {
+      context: (metadata?.selectedText && typeof window !== 'undefined') ? {
         selectedText: metadata.selectedText,
         pageUrl: window.location.pathname,
         pageTitle: document.title,

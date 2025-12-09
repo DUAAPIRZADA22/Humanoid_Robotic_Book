@@ -42,6 +42,11 @@ function ChatWidgetInner({
    * Handle custom events
    */
   useEffect(() => {
+    // Only run on client side
+    if (typeof window === 'undefined') {
+      return;
+    }
+
     // Handle clear messages event
     const handleClearMessages = () => {
       window.dispatchEvent(new CustomEvent('chat:clear-messages-context'));
