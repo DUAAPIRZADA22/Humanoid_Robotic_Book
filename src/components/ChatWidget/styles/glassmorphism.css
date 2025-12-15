@@ -21,22 +21,48 @@
   box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
 }
 
-/* Dark theme input styling */
+/* Dark theme input styling - Maximum visibility */
 [data-theme='dark'] .glass-input {
-  background: rgba(30, 41, 59, 0.8);
-  color: #ffffff;
+  background: #1a1a1a !important;
+  color: #ffffff !important;
   border: 1px solid rgba(236, 72, 153, 0.3);
+  font-weight: 500;
 }
 
 [data-theme='dark'] .glass-input::placeholder {
-  color: #e2e8f0;
+  color: #f1f5f9 !important;
 }
 
-/* Dark theme message bubbles */
+/* Dark theme message bubbles - Maximum visibility */
 [data-theme='dark'] .glass-bubble {
-  background: rgba(30, 41, 59, 0.9);
+  background: #1a1a1a !important;
   border: 1px solid rgba(236, 72, 153, 0.2);
-  color: #e2e8f0;
+  color: #ffffff !important;
+}
+
+/* Dark theme chat components backgrounds */
+[data-theme='dark'] .glass-card {
+  background: #1a1a1a !important;
+  border: 1px solid rgba(236, 72, 153, 0.2) !important;
+}
+
+[data-theme='dark'] .chatInterface {
+  background: #1a1a1a !important;
+  border: 1px solid rgba(236, 72, 153, 0.2) !important;
+}
+
+/* Dark theme all chat components */
+[data-theme='dark'] .chatInterface,
+[data-theme='dark'] .messageBubble,
+[data-theme='dark'] .messageInput,
+[data-theme='dark'] .chatHeader {
+  color: #ffffff !important;
+}
+
+[data-theme='dark'] .messageBubble p,
+[data-theme='dark'] .messageBubble span,
+[data-theme='dark'] .messageBubble div {
+  color: #f1f5f9 !important;
 }
 
 /* Light theme glass variants */

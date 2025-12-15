@@ -47,14 +47,16 @@
   --ifm-color-content-secondary: #2d2d2d;
 }
 
-/* Dark mode styles - Enhanced visibility */
+/* Dark mode styles - Proper contrast with dark backgrounds */
 html[data-theme='dark'] {
-  --ifm-background-color: #0f172a;
-  --ifm-background-surface-color: #1e293b;
-  --ifm-card-background-color: rgba(30, 41, 59, 0.5);
+  --ifm-background-color: #000000;
+  --ifm-background-surface-color: #1a1a1a;
+  --ifm-card-background-color: rgba(26, 26, 26, 0.95);
   --ifm-font-color-base: #ffffff;
-  --ifm-font-color-secondary: #e2e8f0;
-  --ifm-font-color-emphasis: #f8fafc;
+  --ifm-font-color-secondary: #f1f5f9;
+  --ifm-font-color-emphasis: #ffffff;
+  --ifm-color-content: #ffffff;
+  --ifm-color-content-secondary: #f1f5f9;
 }
 
 /* Light mode styles */
@@ -1390,7 +1392,7 @@ html[data-theme='light'] .theme-doc-markdown li {
   color: #1a1a1a;
 }
 
-/* Enhanced text visibility for dark theme */
+/* Maximum text visibility for dark theme */
 html[data-theme='dark'] {
   --docusaurus-foreground-color: #ffffff;
 }
@@ -1399,13 +1401,18 @@ html[data-theme='dark'] body {
   color: #ffffff;
 }
 
+html[data-theme='dark'] * {
+  color: inherit !important;
+}
+
 html[data-theme='dark'] h1,
 html[data-theme='dark'] h2,
 html[data-theme='dark'] h3,
 html[data-theme='dark'] h4,
 html[data-theme='dark'] h5,
 html[data-theme='dark'] h6 {
-  color: #f8fafc;
+  color: #ffffff !important;
+  font-weight: 700;
 }
 
 html[data-theme='dark'] p,
@@ -1413,28 +1420,30 @@ html[data-theme='dark'] div,
 html[data-theme='dark'] span,
 html[data-theme='dark'] li,
 html[data-theme='dark'] .text,
-html[data-theme='dark'] .description {
-  color: #e2e8f0;
+html[data-theme='dark'] .description,
+html[data-theme='dark'] article,
+html[data-theme='dark'] section {
+  color: #f1f5f9 !important;
 }
 
 html[data-theme='dark'] .hero,
 html[data-theme='dark'] .hero__title,
 html[data-theme='dark'] .hero__subtitle {
-  color: #f8fafc;
+  color: #ffffff !important;
 }
 
 html[data-theme='dark'] .card,
 html[data-theme='dark'] .feature {
-  color: #e2e8f0;
+  color: #f1f5f9 !important;
 }
 
 html[data-theme='dark'] .button {
-  color: #ffffff;
+  color: #ffffff !important;
 }
 
 html[data-theme='dark'] .markdown,
 html[data-theme='dark'] .theme-doc-markdown {
-  color: #e2e8f0;
+  color: #f1f5f9 !important;
 }
 
 html[data-theme='dark'] .theme-doc-markdown h1,
@@ -1443,14 +1452,123 @@ html[data-theme='dark'] .theme-doc-markdown h3,
 html[data-theme='dark'] .theme-doc-markdown h4,
 html[data-theme='dark'] .theme-doc-markdown h5,
 html[data-theme='dark'] .theme-doc-markdown h6 {
-  color: #f8fafc;
+  color: #ffffff !important;
 }
 
 html[data-theme='dark'] .theme-doc-markdown p,
 html[data-theme='dark'] .theme-doc-markdown ul,
 html[data-theme='dark'] .theme-doc-markdown ol,
 html[data-theme='dark'] .theme-doc-markdown li {
-  color: #e2e8f0;
+  color: #f1f5f9 !important;
+}
+
+/* Force maximum contrast on all text elements */
+html[data-theme='dark'] [class*="text"],
+html[data-theme='dark'] [class*="title"],
+html[data-theme='dark'] [class*="heading"],
+html[data-theme='dark'] [class*="subtitle"],
+html[data-theme='dark'] [class*="description"],
+html[data-theme='dark'] [class*="content"] {
+  color: #ffffff !important;
+}
+
+html[data-theme='dark'] code,
+html[data-theme='dark'] pre {
+  color: #ffffff !important;
+  background: rgba(0, 0, 0, 0.3) !important;
+}
+
+html[data-theme='dark'] blockquote {
+  color: #f1f5f9 !important;
+  border-left-color: #ec4899 !important;
+}
+
+/* Ultimate dark mode text override - Maximum visibility */
+html[data-theme='dark'] {
+  color: #ffffff !important;
+}
+
+html[data-theme='dark'] * {
+  color: inherit !important;
+}
+
+/* Force white text on all elements except links with special styling */
+html[data-theme='dark'] :not(.navbar__link):not(.footer__link-item):not(.button--secondary):not(.navbar-sidebar__item .menu__link) {
+  color: #ffffff !important;
+}
+
+/* Special handling for text elements */
+html[data-theme='dark'] p,
+html[data-theme='dark'] span,
+html[data-theme='dark'] div,
+html[data-theme='dark'] h1,
+html[data-theme='dark'] h2,
+html[data-theme='dark'] h3,
+html[data-theme='dark'] h4,
+html[data-theme='dark'] h5,
+html[data-theme='dark'] h6,
+html[data-theme='dark'] li,
+html[data-theme='dark'] td,
+html[data-theme='dark'] th,
+html[data-theme='dark'] label,
+html[data-theme='dark'] input,
+html[data-theme='dark'] textarea,
+html[data-theme='dark'] select {
+  color: #ffffff !important;
+}
+
+/* Keep accent colors for interactive elements */
+html[data-theme='dark'] .navbar__link:hover,
+html[data-theme='dark'] .footer__link-item:hover,
+html[data-theme='dark'] .navbar-sidebar__item .menu__link:hover,
+html[data-theme='dark'] .navbar__item .navbar__link--active,
+html[data-theme='dark'] .navbar-sidebar__item .menu__link--active {
+  color: #f472b6 !important;
+}
+
+/* Dark mode background overrides - Ensure proper dark backgrounds */
+html[data-theme='dark'] body {
+  background: #000000 !important;
+}
+
+html[data-theme='dark'] .navbar {
+  background: rgba(0, 0, 0, 0.95) !important;
+  border-bottom: 1px solid rgba(236, 72, 153, 0.2) !important;
+}
+
+html[data-theme='dark'] .footer {
+  background: #000000 !important;
+  border-top: 1px solid rgba(236, 72, 153, 0.2) !important;
+}
+
+html[data-theme='dark'] .card,
+html[data-theme='dark'] .feature,
+html[data-theme='dark'] article {
+  background: #1a1a1a !important;
+  border: 1px solid rgba(236, 72, 153, 0.15) !important;
+}
+
+html[data-theme='dark'] .hero {
+  background: #000000 !important;
+}
+
+html[data-theme='dark'] .timeline {
+  background: #000000 !important;
+}
+
+html[data-theme='dark'] .timeline-content {
+  background: #1a1a1a !important;
+  border: 1px solid rgba(236, 72, 153, 0.2) !important;
+}
+
+/* Dark mode sidebar */
+html[data-theme='dark'] .navbar-sidebar {
+  background: #000000 !important;
+}
+
+html[data-theme='dark'] .navbar-sidebar__brand {
+  background: #1a1a1a !important;
+  border-bottom: 1px solid rgba(236, 72, 153, 0.2) !important;
 }
 
 /* Import ChatWidget glassmorphism styles */

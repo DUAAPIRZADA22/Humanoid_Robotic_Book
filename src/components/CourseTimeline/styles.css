@@ -147,13 +147,13 @@
   justify-content: center;
 }
 
-/* Dark theme styles */
+/* Dark theme styles - Proper dark backgrounds */
 html[data-theme='dark'] .timeline {
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  background: #000000;
 }
 
 html[data-theme='dark'] .timeline-content {
-  background: rgba(30, 41, 59, 0.95);
+  background: #1a1a1a;
   border: 1px solid rgba(236, 72, 153, 0.2);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
@@ -170,19 +170,23 @@ html[data-theme='dark'] .subtitle {
 }
 
 html[data-theme='dark'] .module-title {
-  color: #f8fafc;
+  color: #ffffff !important;
 }
 
 html[data-theme='dark'] .module-description {
-  color: #e2e8f0;
+  color: #f1f5f9 !important;
 }
 
 html[data-theme='dark'] .chapters-title {
-  color: #f8fafc;
+  color: #ffffff !important;
 }
 
 html[data-theme='dark'] .chapter-item {
-  color: #e2e8f0;
+  color: #f1f5f9 !important;
+}
+
+html[data-theme='dark'] .subtitle {
+  color: #f1f5f9 !important;
 }
 
 /* Responsive design */
