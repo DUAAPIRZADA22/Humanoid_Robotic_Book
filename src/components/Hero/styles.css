@@ -5,7 +5,7 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 40%, #334155 100%);
+  background: linear-gradient(135deg, #000000 0%, #1a0a1a 40%, #2a0a2a 100%);
 }
 
 .hero-gradient {
@@ -15,9 +15,9 @@
   right: 0;
   bottom: 0;
   background:
-    radial-gradient(circle at 20% 80%, rgba(59, 130, 246, 0.3) 0%, transparent 50%),
-    radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.3) 0%, transparent 50%),
-    radial-gradient(circle at 40% 40%, rgba(236, 72, 153, 0.2) 0%, transparent 50%);
+    radial-gradient(circle at 20% 80%, rgba(236, 72, 153, 0.4) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(244, 114, 182, 0.4) 0%, transparent 50%),
+    radial-gradient(circle at 40% 40%, rgba(167, 139, 250, 0.3) 0%, transparent 50%);
   background-size: 400% 400%;
   animation: gradient 30s ease infinite;
 }
@@ -47,8 +47,8 @@
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  background: rgba(59, 130, 246, 0.1);
-  border: 1px solid rgba(59, 130, 246, 0.3);
+  background: rgba(236, 72, 153, 0.2);
+  border: 1px solid rgba(236, 72, 153, 0.3);
   border-radius: 2rem;
   padding: 0.5rem 1.5rem;
   margin-bottom: 2rem;
@@ -57,7 +57,7 @@
 }
 
 .badge-text {
-  color: #60a5fa;
+  color: #f9a8d4;
   font-weight: 600;
   font-size: 0.9rem;
 }
@@ -67,23 +67,25 @@
   font-weight: 900;
   line-height: 1.1;
   margin-bottom: 1.5rem;
-  background: linear-gradient(135deg, #ffffff 0%, #e2e8f0 50%, #cbd5e1 100%);
+  background: linear-gradient(135deg, #f9a8d4 0%, #c084fc 25%, #a78bfa 50%, #ec4899 75%, #f472b6 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
   animation: fadeIn 0.8s ease-out 0.2s both;
-  text-shadow: 0 0 40px rgba(59, 130, 246, 0.3);
+  text-shadow: 0 0 60px rgba(236, 72, 153, 0.4);
+  filter: drop-shadow(0 4px 8px rgba(236, 72, 153, 0.3));
 }
 
 .hero-subtitle {
   font-size: 1.75rem;
-  color: #94a3b8;
+  color: #e2e8f0;
   margin-bottom: 3rem;
   font-weight: 500;
   animation: fadeIn 0.8s ease-out 0.4s both;
   max-width: 700px;
   margin-left: auto;
   margin-right: auto;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
 .hero-buttons {
@@ -110,15 +112,17 @@
 }
 
 .primary-cta {
-  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+  background: linear-gradient(135deg, #ec4899 0%, #f472b6 50%, #c084fc 100%);
   border: none;
   color: white;
-  box-shadow: 0 10px 30px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 10px 30px rgba(236, 72, 153, 0.4);
+  border: 1px solid rgba(236, 72, 153, 0.3);
 }
 
 .primary-cta:hover {
   transform: translateY(-2px);
-  box-shadow: 0 15px 40px rgba(59, 130, 246, 0.4);
+  box-shadow: 0 15px 40px rgba(236, 72, 153, 0.5);
+  background: linear-gradient(135deg, #db2777 0%, #ec4899 50%, #a855f7 100%);
 }
 
 .button-content {
@@ -136,15 +140,16 @@
 }
 
 .secondary-cta {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #e2e8f0;
+  background: rgba(236, 72, 153, 0.15);
+  border: 1px solid rgba(236, 72, 153, 0.3);
+  color: #f9a8d4;
   backdrop-filter: blur(10px);
 }
 
 .secondary-cta:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(236, 72, 153, 0.25);
+  border-color: rgba(236, 72, 153, 0.5);
+  color: #ffffff;
   transform: translateY(-2px);
 }
 
@@ -171,15 +176,16 @@
 .stat-number {
   font-size: 2.5rem;
   font-weight: 800;
-  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+  background: linear-gradient(135deg, #f9a8d4 0%, #ec4899 50%, #c084fc 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 20px rgba(236, 72, 153, 0.3);
 }
 
 .stat-label {
   font-size: 0.9rem;
-  color: #64748b;
+  color: #cbd5e1;
   font-weight: 500;
 }
 
@@ -210,10 +216,10 @@
 }
 
 .hero-card {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(236, 72, 153, 0.08);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(236, 72, 153, 0.15);
   border-radius: 1rem;
   padding: 2rem;
   min-height: 180px;
@@ -234,8 +240,9 @@
 
 .hero-card:hover {
   transform: translateY(-5px);
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(236, 72, 153, 0.12);
+  border-color: rgba(236, 72, 153, 0.25);
+  box-shadow: 0 10px 30px rgba(236, 72, 153, 0.2);
 }
 
 .card-header {
@@ -252,13 +259,13 @@
 }
 
 .card-badge {
-  background: rgba(59, 130, 246, 0.2);
-  color: #60a5fa;
+  background: rgba(236, 72, 153, 0.2);
+  color: #f9a8d4;
   font-size: 0.75rem;
   font-weight: 600;
   padding: 0.25rem 0.75rem;
   border-radius: 1rem;
-  border: 1px solid rgba(59, 130, 246, 0.3);
+  border: 1px solid rgba(236, 72, 153, 0.3);
   white-space: nowrap;
   flex-shrink: 0;
 }
