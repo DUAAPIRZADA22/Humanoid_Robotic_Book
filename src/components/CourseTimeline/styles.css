@@ -170,19 +170,19 @@ html[data-theme='dark'] .subtitle {
 }
 
 html[data-theme='dark'] .module-title {
-  color: #f1f5f9;
+  color: #f8fafc;
 }
 
 html[data-theme='dark'] .module-description {
-  color: #cbd5e0;
+  color: #e2e8f0;
 }
 
 html[data-theme='dark'] .chapters-title {
-  color: #f1f5f9;
+  color: #f8fafc;
 }
 
 html[data-theme='dark'] .chapter-item {
-  color: #cbd5e0;
+  color: #e2e8f0;
 }
 
 /* Responsive design */

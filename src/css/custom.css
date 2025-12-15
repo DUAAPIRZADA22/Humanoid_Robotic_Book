@@ -47,14 +47,14 @@
   --ifm-color-content-secondary: #2d2d2d;
 }
 
-/* Dark mode styles */
+/* Dark mode styles - Enhanced visibility */
 html[data-theme='dark'] {
   --ifm-background-color: #0f172a;
   --ifm-background-surface-color: #1e293b;
   --ifm-card-background-color: rgba(30, 41, 59, 0.5);
-  --ifm-font-color-base: #f1f5f9;
-  --ifm-font-color-secondary: #94a3b8;
-  --ifm-font-color-emphasis: #e2e8f0;
+  --ifm-font-color-base: #ffffff;
+  --ifm-font-color-secondary: #e2e8f0;
+  --ifm-font-color-emphasis: #f8fafc;
 }
 
 /* Light mode styles */
@@ -302,9 +302,9 @@ html[data-theme='light'] .navbar {
   font-weight: 700;
 }
 
-/* Dark theme navbar */
+/* Dark theme navbar - Enhanced visibility */
 html[data-theme='dark'] .navbar__link {
-  color: #f1f5f9 !important;
+  color: #ffffff !important;
   font-weight: 600;
 }
 
@@ -1388,6 +1388,69 @@ html[data-theme='light'] .theme-doc-markdown ul,
 html[data-theme='light'] .theme-doc-markdown ol,
 html[data-theme='light'] .theme-doc-markdown li {
   color: #1a1a1a;
+}
+
+/* Enhanced text visibility for dark theme */
+html[data-theme='dark'] {
+  --docusaurus-foreground-color: #ffffff;
+}
+
+html[data-theme='dark'] body {
+  color: #ffffff;
+}
+
+html[data-theme='dark'] h1,
+html[data-theme='dark'] h2,
+html[data-theme='dark'] h3,
+html[data-theme='dark'] h4,
+html[data-theme='dark'] h5,
+html[data-theme='dark'] h6 {
+  color: #f8fafc;
+}
+
+html[data-theme='dark'] p,
+html[data-theme='dark'] div,
+html[data-theme='dark'] span,
+html[data-theme='dark'] li,
+html[data-theme='dark'] .text,
+html[data-theme='dark'] .description {
+  color: #e2e8f0;
+}
+
+html[data-theme='dark'] .hero,
+html[data-theme='dark'] .hero__title,
+html[data-theme='dark'] .hero__subtitle {
+  color: #f8fafc;
+}
+
+html[data-theme='dark'] .card,
+html[data-theme='dark'] .feature {
+  color: #e2e8f0;
+}
+
+html[data-theme='dark'] .button {
+  color: #ffffff;
+}
+
+html[data-theme='dark'] .markdown,
+html[data-theme='dark'] .theme-doc-markdown {
+  color: #e2e8f0;
+}
+
+html[data-theme='dark'] .theme-doc-markdown h1,
+html[data-theme='dark'] .theme-doc-markdown h2,
+html[data-theme='dark'] .theme-doc-markdown h3,
+html[data-theme='dark'] .theme-doc-markdown h4,
+html[data-theme='dark'] .theme-doc-markdown h5,
+html[data-theme='dark'] .theme-doc-markdown h6 {
+  color: #f8fafc;
+}
+
+html[data-theme='dark'] .theme-doc-markdown p,
+html[data-theme='dark'] .theme-doc-markdown ul,
+html[data-theme='dark'] .theme-doc-markdown ol,
+html[data-theme='dark'] .theme-doc-markdown li {
+  color: #e2e8f0;
 }
 
 /* Import ChatWidget glassmorphism styles */

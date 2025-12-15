@@ -12,13 +12,31 @@
   box-shadow: 0 8px 32px 0 rgba(236, 72, 153, 0.15);
 }
 
-/* Dark theme glass variants */
+/* Dark theme glass variants - Enhanced visibility */
 [data-theme='dark'] .glass-card-dark {
   background: rgba(0, 0, 0, 0.25);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(236, 72, 153, 0.2);
   box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+/* Dark theme input styling */
+[data-theme='dark'] .glass-input {
+  background: rgba(30, 41, 59, 0.8);
+  color: #ffffff;
+  border: 1px solid rgba(236, 72, 153, 0.3);
+}
+
+[data-theme='dark'] .glass-input::placeholder {
+  color: #e2e8f0;
+}
+
+/* Dark theme message bubbles */
+[data-theme='dark'] .glass-bubble {
+  background: rgba(30, 41, 59, 0.9);
+  border: 1px solid rgba(236, 72, 153, 0.2);
+  color: #e2e8f0;
 }
 
 /* Light theme glass variants */
