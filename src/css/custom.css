@@ -29,10 +29,10 @@
   --ifm-background-surface-color: #ffffff;
   --ifm-card-background-color: rgba(255, 255, 255, 0.9);
 
-  /* Soft text colors */
-  --ifm-font-color-base: #4a5568;
-  --ifm-font-color-secondary: #718096;
-  --ifm-font-color-emphasis: #2d3748;
+  /* Dark text colors for better visibility */
+  --ifm-font-color-base: #1a1a1a;
+  --ifm-font-color-secondary: #2d2d2d;
+  --ifm-font-color-emphasis: #000000;
 
   /* Light code styling */
   --ifm-code-background: #fff5f5;
@@ -42,9 +42,9 @@
   --ifm-table-stripe-background: #fffaf0;
   --ifm-table-border-color: #fed7d7;
 
-  /* Content colors */
-  --ifm-color-content: #4a5568;
-  --ifm-color-content-secondary: #718096;
+  /* Content colors - Darker for better visibility */
+  --ifm-color-content: #1a1a1a;
+  --ifm-color-content-secondary: #2d2d2d;
 }
 
 /* Dark mode styles */
@@ -251,9 +251,9 @@ html[data-theme='light'] .navbar {
   box-shadow: 0 4px 6px -1px rgba(236, 72, 153, 0.08);
 }
 
-/* Navbar links - Enhanced visibility */
+/* Navbar links - Enhanced visibility with black text */
 .navbar__link {
-  color: #2d3748 !important;
+  color: #000000 !important;
   font-weight: 600;
   transition: all 0.2s ease;
   position: relative;
@@ -281,9 +281,9 @@ html[data-theme='light'] .navbar {
   width: 100%;
 }
 
-/* Navbar brand/title - Enhanced visibility */
+/* Navbar brand/title - Enhanced visibility with black text */
 .navbar__brand {
-  color: #1a202c !important;
+  color: #000000 !important;
   font-weight: 800;
   transition: all 0.2s ease;
   font-family: 'Inter', sans-serif;
@@ -347,10 +347,10 @@ html[data-theme='dark'] .navbar__item .navbar__link--active {
   color: #1a202c !important;
 }
 
-/* Footer links and titles */
+/* Footer links and titles - Enhanced visibility with black text */
 .footer__title,
 .footer__link-item {
-  color: #2d3748 !important;
+  color: #000000 !important;
   font-weight: 600 !important;
   font-family: 'Inter', sans-serif !important;
 }
@@ -360,7 +360,7 @@ html[data-theme='dark'] .navbar__item .navbar__link--active {
 }
 
 .footer__logo {
-  color: #1a202c !important;
+  color: #000000 !important;
   font-weight: 800 !important;
 }
 
@@ -1289,7 +1289,7 @@ html[data-theme='light'] .footer {
   }
 
   .navbar-sidebar__item .menu__link {
-    color: #2d3748 !important;
+    color: #000000 !important;
     font-weight: 600 !important;
     transition: all 0.2s ease;
     padding: 12px 16px;
@@ -1325,6 +1325,69 @@ html[data-theme='light'] .footer {
     background: rgba(236, 72, 153, 0.25);
     color: #f472b6 !important;
   }
+}
+
+/* Enhanced text visibility for light theme */
+html[data-theme='light'] {
+  --docusaurus-foreground-color: #000000;
+}
+
+html[data-theme='light'] body {
+  color: #1a1a1a;
+}
+
+html[data-theme='light'] h1,
+html[data-theme='light'] h2,
+html[data-theme='light'] h3,
+html[data-theme='light'] h4,
+html[data-theme='light'] h5,
+html[data-theme='light'] h6 {
+  color: #000000;
+}
+
+html[data-theme='light'] p,
+html[data-theme='light'] div,
+html[data-theme='light'] span,
+html[data-theme='light'] li,
+html[data-theme='light'] .text,
+html[data-theme='light'] .description {
+  color: #1a1a1a;
+}
+
+html[data-theme='light'] .hero,
+html[data-theme='light'] .hero__title,
+html[data-theme='light'] .hero__subtitle {
+  color: #000000;
+}
+
+html[data-theme='light'] .card,
+html[data-theme='light'] .feature {
+  color: #1a1a1a;
+}
+
+html[data-theme='light'] .button {
+  color: #000000;
+}
+
+html[data-theme='light'] .markdown,
+html[data-theme='light'] .theme-doc-markdown {
+  color: #1a1a1a;
+}
+
+html[data-theme='light'] .theme-doc-markdown h1,
+html[data-theme='light'] .theme-doc-markdown h2,
+html[data-theme='light'] .theme-doc-markdown h3,
+html[data-theme='light'] .theme-doc-markdown h4,
+html[data-theme='light'] .theme-doc-markdown h5,
+html[data-theme='light'] .theme-doc-markdown h6 {
+  color: #000000;
+}
+
+html[data-theme='light'] .theme-doc-markdown p,
+html[data-theme='light'] .theme-doc-markdown ul,
+html[data-theme='light'] .theme-doc-markdown ol,
+html[data-theme='light'] .theme-doc-markdown li {
+  color: #1a1a1a;
 }
 
 /* Import ChatWidget glassmorphism styles */

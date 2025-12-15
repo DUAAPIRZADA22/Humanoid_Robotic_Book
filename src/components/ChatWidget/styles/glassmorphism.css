@@ -36,13 +36,13 @@
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border: 1px solid rgba(236, 72, 153, 0.2);
-  color: #2d3748;
+  color: #000000;
   font-family: 'Inter', sans-serif;
   font-weight: 500;
 }
 
 .glass-input::placeholder {
-  color: #4a5568;
+  color: #1a1a1a;
   font-family: 'Inter', sans-serif;
 }
 
