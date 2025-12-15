@@ -83,7 +83,6 @@ export default function CourseTimeline() {
                   Start Module {module.id}
                 </Link>
               </div>
-              <div className="timeline-connector"></div>
             </div>
           ))}
         </div>
