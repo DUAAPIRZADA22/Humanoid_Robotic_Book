@@ -62,12 +62,16 @@
   cursor: pointer;
   transition: all 0.2s ease;
   border: none;
-  color: var(--color-primary, #fff);
+  background: linear-gradient(135deg, #ec4899 0%, #f472b6 100%);
+  color: white;
+  box-shadow: 0 8px 32px 0 rgba(236, 72, 153, 0.4);
+  z-index: 1000;
 }
 
 .toggleButton:hover {
   transform: scale(1.05);
-  box-shadow: 0 8px 40px 0 rgba(31, 38, 135, 0.5);
+  box-shadow: 0 8px 40px 0 rgba(236, 72, 153, 0.6);
+  background: linear-gradient(135deg, #db2777 0%, #f472b6 100%);
 }
 
 .toggleButton.streaming {

@@ -84,6 +84,7 @@ const config = {
             position: 'right',
           },
         ],
+        hideOnScroll: false,
       },
       footer: {
         style: 'dark',
@@ -143,7 +144,7 @@ const config = {
       },
       // Default theme configuration
       colorMode: {
-        defaultMode: 'dark',
+        defaultMode: 'light',
         disableSwitch: false,
         respectPrefersColorScheme: false,
       },

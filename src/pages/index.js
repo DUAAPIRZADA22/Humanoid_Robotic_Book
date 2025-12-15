@@ -40,7 +40,7 @@ export default function Home() {
         <CourseTimeline />
       </main>
       <Footer />
-      <ChatWidget />
+      <ChatWidget defaultOpen={true} />
     </Layout>
   );
 }

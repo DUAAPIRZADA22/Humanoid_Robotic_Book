@@ -3,38 +3,45 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Custom CSS variables and base styles */
+/* Custom CSS variables and base styles - Light Girlish Theme */
 :root {
-  --ifm-color-primary: #6366f1;
-  --ifm-color-primary-dark: #4f46e5;
-  --ifm-color-primary-darker: #4338ca;
-  --ifm-color-primary-darkest: #3730a3;
-  --ifm-color-primary-light: #818cf8;
-  --ifm-color-primary-lighter: #a5b4fc;
-  --ifm-color-primary-lightest: #c7d2fe;
+  /* Soft pink and purple primary colors */
+  --ifm-color-primary: #ec4899;
+  --ifm-color-primary-dark: #db2777;
+  --ifm-color-primary-darker: #be185d;
+  --ifm-color-primary-darkest: #9f1239;
+  --ifm-color-primary-light: #f472b6;
+  --ifm-color-primary-lighter: #f9a8d4;
+  --ifm-color-primary-lightest: #fbcfe8;
 
-  --ifm-color-secondary: #8b5cf6;
-  --ifm-color-success: #10b981;
-  --ifm-color-info: #3b82f6;
-  --ifm-color-warning: #f59e0b;
-  --ifm-color-danger: #ef4444;
+  /* Soft complementary colors */
+  --ifm-color-secondary: #a78bfa;
+  --ifm-color-success: #34d399;
+  --ifm-color-info: #60a5fa;
+  --ifm-color-warning: #fbbf24;
+  --ifm-color-danger: #f87171;
 
-  --ifm-background-color: #0f172a;
-  --ifm-background-surface-color: #1e293b;
-  --ifm-card-background-color: rgba(30, 41, 59, 0.5);
+  /* Light background colors */
+  --ifm-background-color: #fef7f0;
+  --ifm-background-surface-color: #ffffff;
+  --ifm-card-background-color: rgba(255, 255, 255, 0.9);
 
-  --ifm-font-color-base: #f1f5f9;
-  --ifm-font-color-secondary: #94a3b8;
-  --ifm-font-color-emphasis: #e2e8f0;
+  /* Soft text colors */
+  --ifm-font-color-base: #4a5568;
+  --ifm-font-color-secondary: #718096;
+  --ifm-font-color-emphasis: #2d3748;
 
-  --ifm-code-background: #1e293b;
-  --ifm-code-color: #e2e8f0;
+  /* Light code styling */
+  --ifm-code-background: #fff5f5;
+  --ifm-code-color: #d53f8c;
 
-  --ifm-table-stripe-background: #1e293b;
-  --ifm-table-border-color: #334155;
+  /* Light table styling */
+  --ifm-table-stripe-background: #fffaf0;
+  --ifm-table-border-color: #fed7d7;
 
-  --ifm-color-content: #f1f5f9;
-  --ifm-color-content-secondary: #94a3b8;
+  /* Content colors */
+  --ifm-color-content: #4a5568;
+  --ifm-color-content-secondary: #718096;
 }
 
 /* Dark mode styles */
@@ -49,12 +56,12 @@ html[data-theme='dark'] {
 
 /* Light mode styles */
 html[data-theme='light'] {
-  --ifm-background-color: #f8fafc;
+  --ifm-background-color: #fef7f0;
   --ifm-background-surface-color: #ffffff;
-  --ifm-card-background-color: rgba(255, 255, 255, 0.8);
-  --ifm-font-color-base: #0f172a;
-  --ifm-font-color-secondary: #475569;
-  --ifm-font-color-emphasis: #1e293b;
+  --ifm-card-background-color: rgba(255, 255, 255, 0.9);
+  --ifm-font-color-base: #4a5568;
+  --ifm-font-color-secondary: #718096;
+  --ifm-font-color-emphasis: #2d3748;
 }
 
 /* Base styles */
@@ -227,17 +234,18 @@ div[class*='codeBlock'] {
 .navbar {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  background: rgba(15, 23, 42, 0.95);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  background: rgba(254, 247, 240, 0.95);
+  border-bottom: 1px solid rgba(236, 72, 153, 0.2);
+  box-shadow: 0 4px 6px -1px rgba(236, 72, 153, 0.1);
   transition: all 0.3s ease;
+  z-index: 999;
 }
 
 /* Light theme navbar */
 html[data-theme='light'] .navbar {
   background: rgba(255, 255, 255, 0.95);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  border-bottom: 1px solid rgba(236, 72, 153, 0.15);
+  box-shadow: 0 4px 6px -1px rgba(236, 72, 153, 0.08);
 }
 
 /* Navbar links */
@@ -1177,5 +1185,64 @@ html[data-theme='light'] .footer {
     max-width: none;
   }
 }
+/* Mobile navbar improvements */
+@media (max-width: 996px) {
+  .navbar {
+    padding: 0.5rem 1rem;
+    min-height: 60px;
+  }
+
+  .navbar__toggle {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    color: var(--ifm-color-primary) !important;
+    background: rgba(236, 72, 153, 0.1);
+    border: 1px solid rgba(236, 72, 153, 0.2);
+    border-radius: 8px;
+    padding: 8px;
+    margin: 0;
+    width: 40px;
+    height: 40px;
+    transition: all 0.2s ease;
+  }
+
+  .navbar__toggle:hover {
+    background: rgba(236, 72, 153, 0.2);
+    transform: scale(1.05);
+  }
+
+  .navbar-sidebar {
+    background: rgba(255, 255, 255, 0.98) !important;
+    backdrop-filter: blur(20px);
+    border-right: 1px solid rgba(236, 72, 153, 0.15);
+  }
+
+  .navbar-sidebar__brand {
+    background: rgba(236, 72, 153, 0.05);
+    border-bottom: 1px solid rgba(236, 72, 153, 0.15);
+  }
+
+  .navbar-sidebar__item .menu__link {
+    color: var(--ifm-font-color-base) !important;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin: 4px 8px;
+  }
+
+  .navbar-sidebar__item .menu__link:hover {
+    background: rgba(236, 72, 153, 0.1);
+    color: var(--ifm-color-primary) !important;
+    transform: translateX(4px);
+  }
+
+  .navbar-sidebar__item .menu__link--active {
+    background: rgba(236, 72, 153, 0.15);
+    color: var(--ifm-color-primary) !important;
+  }
+}
+
 /* Import ChatWidget glassmorphism styles */
 @import '../components/ChatWidget/styles/glassmorphism.css';

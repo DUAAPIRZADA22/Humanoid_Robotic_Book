@@ -237,7 +237,7 @@ export default function FoundationAIIntegration() {
           </div>
         </section>
       </div>
-      <ChatWidget />
+      <ChatWidget defaultOpen={true} />
     </Layout>
   );
 }
