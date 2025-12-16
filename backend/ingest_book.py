@@ -105,12 +105,12 @@ async def ingest_book_content():
             }
 
             # Chunk the content
-            chunks = chunker.chunk_text(content, metadata)
+            chunks = chunker.chunk_document(content, str(file_path.relative_to(docs_path)))
             logger.info(f"Generated {len(chunks)} chunks from {file_path.name}")
 
             # Generate embeddings for chunks
             texts = [chunk.text for chunk in chunks]
-            embeddings = await embedding_service.generate_embeddings(texts)
+            embeddings = await embedding_service.get_embeddings(texts)
             logger.info(f"Generated {len(embeddings)} embeddings for {file_path.name}")
 
             # Store in vector database
@@ -131,7 +131,7 @@ async def ingest_book_content():
                 points.append(point)
 
             # Upsert to Qdrant
-            await vector_store.upsert_points(points)
+            await vector_store.upsert(points)
             logger.info(f"Stored {len(points)} points in Qdrant for {file_path.name}")
 
             total_chunks += len(chunks)
@@ -153,12 +153,12 @@ async def ingest_book_content():
         test_query = "What is Physical AI?"
 
         # Generate embedding for test query
-        query_embedding = await embedding_service.generate_embeddings([test_query])
+        query_embedding = await embedding_service.get_embeddings([test_query])
 
         # Search in Qdrant
         search_results = await vector_store.search(
             query_vector=query_embedding[0],
-            limit=5,
+            top_k=5,
             score_threshold=0.5
         )
 
