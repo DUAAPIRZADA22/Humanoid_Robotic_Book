@@ -38,7 +38,7 @@ export default function Home() {
         <ChaptersOverview />
         <CourseTimeline />
       </main>
-      <ChatWidget defaultOpen={true} />
+      <ChatWidget defaultOpen={false} />
     </Layout>
   );
 }

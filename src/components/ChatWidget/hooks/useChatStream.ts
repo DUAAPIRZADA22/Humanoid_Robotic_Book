@@ -34,42 +34,67 @@ export function useChatStream(): UseChatStreamReturn {
   const chatApiEndpoint = siteConfig?.customFields?.chatApiEndpoint;
   const chatApiKey = siteConfig?.customFields?.chatApiKey;
 
-  // Create API client from Docusaurus config
+  // Create API client from Docusaurus config with error handling
   const apiClient = createApiClient(
-    chatApiEndpoint,
-    chatApiKey
+    chatApiEndpoint || '',
+    chatApiKey || ''
   );
 
   /**
    * Handle streaming response chunks
    */
   const handleStreamChunk = useCallback((chunk: any) => {
-    switch (chunk.type) {
-      case 'start':
-        // Start streaming with new message ID
-        dispatch(chatActions.startStream(chunk.sessionId || `msg_${Date.now()}`));
-        break;
+    // Validate chunk structure
+    if (!chunk || typeof chunk !== 'object') {
+      console.warn('Invalid streaming chunk received:', chunk);
+      return;
+    }
 
-      case 'chunk':
-        // Append content to streaming message
-        dispatch(chatActions.appendStream(chunk.content || ''));
-        break;
+    try {
+      switch (chunk.type) {
+        case 'metadata':
+          // Start streaming with new message ID
+          dispatch(chatActions.startStream(`msg_${Date.now()}`));
+          break;
 
-      case 'error':
-        // Handle streaming error
-        dispatch(chatActions.setError({
-          code: 'STREAM_ERROR',
-          message: chunk.error || 'Streaming error occurred',
-          retryable: true,
-          timestamp: new Date(),
-        }));
-        dispatch(chatActions.endStream());
-        break;
+        case 'content':
+          // Append content to streaming message
+          const content = chunk.content || '';
+          if (typeof content === 'string') {
+            dispatch(chatActions.appendStream(content + '\n\n'));
+          } else {
+            console.warn('Invalid content in chunk:', chunk);
+          }
+          break;
 
-      case 'done':
-        // End streaming
-        dispatch(chatActions.endStream());
-        break;
+        case 'complete':
+          // End streaming
+          dispatch(chatActions.endStream());
+          break;
+
+        case 'error':
+          // Handle streaming error
+          dispatch(chatActions.setError({
+            code: 'STREAM_ERROR',
+            message: chunk.message || chunk.error || 'Streaming error occurred',
+            retryable: true,
+            timestamp: new Date(),
+          }));
+          dispatch(chatActions.endStream());
+          break;
+
+        default:
+          console.warn('Unknown chunk type:', chunk.type);
+      }
+    } catch (error) {
+      console.error('Error handling stream chunk:', error);
+      dispatch(chatActions.setError({
+        code: 'CHUNK_PROCESSING_ERROR',
+        message: 'Failed to process response chunk',
+        retryable: true,
+        timestamp: new Date(),
+      }));
+      dispatch(chatActions.endStream());
     }
   }, [dispatch]);
 
@@ -94,40 +119,52 @@ export function useChatStream(): UseChatStreamReturn {
     content: string,
     metadata?: any
   ): Promise<void> => {
-    // Check if API is configured
-    if (!chatApiEndpoint || !chatApiKey || chatApiEndpoint.includes('localhost:7860')) {
-      // Create a mock response when no backend is available
-      dispatch(chatActions.setLoading(true));
+    // Validate input parameters
+    if (!content || typeof content !== 'string') {
+      console.error('Invalid content provided to sendStreamMessage:', content);
+      return;
+    }
 
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+    console.log('Sending message to API:', { content, metadata, endpoint: chatApiEndpoint });
 
-      // Add user message
-      dispatch(chatActions.addMessage({
-        id: `user_${Date.now()}`,
-        content,
-        type: 'user',
-        timestamp: new Date(),
-      }));
+    // Check if API is configured (use mock responses only if no endpoint)
+    if (!chatApiEndpoint) {
+      console.log('No API endpoint configured, using mock response');
+      try {
+        // Create a mock response when no backend is available
+        dispatch(chatActions.setLoading(true));
 
-      // Create mock bot response
-      const mockResponses = [
-        "I'm a demo chatbot! The backend API is not currently running, so I can't provide intelligent responses. To enable full functionality, please start the chatbot backend server or configure the API endpoints.",
-        "Hello! This is a demonstration of the chat widget interface. To get actual AI responses, you'll need to run the backend chatbot service that connects to your AI model.",
-        "Thanks for your message! The chatbot backend is currently offline. You can start it by running the Python chatbot server from the project's backend directory, or configure the API endpoints in your environment variables."
-      ];
+        // Simulate API delay
+        await new Promise(resolve => setTimeout(resolve, 1000));
 
-      const mockResponse = mockResponses[Math.floor(Math.random() * mockResponses.length)];
+        // Create mock bot response
+        const mockResponses = [
+          "I'm a demo chatbot! The backend API is not currently running, so I can't provide intelligent responses. To enable full functionality, please start the chatbot backend server or configure the API endpoints.",
+          "Hello! This is a demonstration of the chat widget interface. To get actual AI responses, you'll need to run the backend chatbot service that connects to your AI model.",
+          "Thanks for your message! The chatbot backend is currently offline. You can start it by running the Python chatbot server from the project's backend directory, or configure the API endpoints in your environment variables."
+        ];
 
-      // Add bot response
-      dispatch(chatActions.addMessage({
-        id: `bot_${Date.now()}`,
-        content: mockResponse,
-        type: 'bot',
-        timestamp: new Date(),
-      }));
+        const mockResponse = mockResponses[Math.floor(Math.random() * mockResponses.length)];
 
-      dispatch(chatActions.setLoading(false));
+        // Add bot response using correct message structure
+        dispatch(chatActions.addMessage({
+          id: `bot_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          content: mockResponse,
+          role: 'assistant',
+          timestamp: new Date(),
+        }));
+
+        dispatch(chatActions.setLoading(false));
+      } catch (error) {
+        console.error('Error in mock response generation:', error);
+        dispatch(chatActions.setError({
+          code: 'MOCK_RESPONSE_ERROR',
+          message: 'Failed to generate response',
+          retryable: true,
+          timestamp: new Date(),
+        }));
+        dispatch(chatActions.setLoading(false));
+      }
       return;
     }
 
@@ -140,16 +177,16 @@ export function useChatStream(): UseChatStreamReturn {
       cleanupRef.current = null;
     }
 
-    // Prepare request payload
+    // Prepare request payload to match backend expectations
     const request = {
-      question: content,
-      stream: true,
-      context: (metadata?.selectedText && typeof window !== 'undefined') ? {
-        selectedText: metadata.selectedText,
-        pageUrl: window.location.pathname,
-        pageTitle: document.title,
-      } : undefined,
+      query: content,
+      top_k: 5,
+      similarity_threshold: 0.7,
+      use_rerank: true,
     };
+
+    console.log('Starting API call with request:', request);
+    console.log('API Client config:', { endpoint: apiClient.endpoint, hasApiKey: !!apiClient.apiKey });
 
     // Start streaming
     const cleanup = streamChatMessage(
@@ -166,22 +203,38 @@ export function useChatStream(): UseChatStreamReturn {
 
   // Listen for send message events from context
   useEffect(() => {
-    const handleSendMessage = (event: CustomEvent) => {
-      const { content, metadata } = event.detail;
-      sendStreamMessage(content, metadata);
+    const handleSendMessage = (event: Event) => {
+      try {
+        const customEvent = event as CustomEvent;
+        if (!customEvent.detail) {
+          console.error('Received send message event without detail:', event);
+          return;
+        }
+
+        const { content, metadata } = customEvent.detail;
+        sendStreamMessage(content, metadata);
+      } catch (error) {
+        console.error('Error handling send message event:', error);
+        dispatch(chatActions.setError({
+          code: 'EVENT_HANDLING_ERROR',
+          message: 'Failed to handle message send event',
+          retryable: true,
+          timestamp: new Date(),
+        }));
+      }
     };
 
     // Add event listener
-    window.addEventListener('chat:send-message', handleSendMessage as EventListener);
+    window.addEventListener('chat:send-message', handleSendMessage);
 
     // Cleanup on unmount
     return () => {
-      window.removeEventListener('chat:send-message', handleSendMessage as EventListener);
+      window.removeEventListener('chat:send-message', handleSendMessage);
       if (cleanupRef.current) {
         cleanupRef.current();
       }
     };
-  }, [sendStreamMessage]);
+  }, [sendStreamMessage, dispatch]);
 
   // Cleanup on unmount
   useEffect(() => {

@@ -39,6 +39,16 @@ function ChatWidgetInner({
   const { selection, showPopover } = useTextSelection();
 
   /**
+   * Clear chat history when opening the chat widget
+   */
+  useEffect(() => {
+    if (isOpen && typeof window !== 'undefined') {
+      // Clear previous chat history when opening
+      window.dispatchEvent(new CustomEvent('chat:clear-messages-context'));
+    }
+  }, [isOpen]);
+
+  /**
    * Handle custom events
    */
   useEffect(() => {

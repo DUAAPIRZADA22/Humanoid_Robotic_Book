@@ -210,7 +210,14 @@ export function streamChatMessage(
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), config.timeout);
 
-  const url = `${config.endpoint.replace(/\/$/, '')}/chat/stream`;
+  const url = `${config.endpoint.replace(/\/$/, '')}/chat`;
+
+  console.log('API Request Details:', {
+    url,
+    method: 'POST',
+    config,
+    request
+  });
 
   fetch(url, {
     method: 'POST',

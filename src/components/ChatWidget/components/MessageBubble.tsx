@@ -50,40 +50,41 @@ export const MessageBubble = memo<MessageBubbleProps>(function MessageBubble({
 
     // Assistant messages support markdown
     return (
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        className={styles.markdownContent}
-        components={{
-          // Custom component for code blocks
-          code: ({ node, inline, className, children, ...props }) => {
-            const match = /language-(\w+)/.exec(className || '');
-            return !inline && match ? (
-              <pre className={styles.codeBlock}>
-                <code className={className} {...props}>
+      <div className={styles.markdownContent}>
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          components={{
+            // Custom component for code blocks
+            code: ({ node, inline, className, children, ...props }) => {
+              const match = /language-(\w+)/.exec(className || '');
+              return !inline && match ? (
+                <pre className={styles.codeBlock}>
+                  <code className={className} {...props}>
+                    {children}
+                  </code>
+                </pre>
+              ) : (
+                <code className={styles.inlineCode} {...props}>
                   {children}
                 </code>
-              </pre>
-            ) : (
-              <code className={styles.inlineCode} {...props}>
+              );
+            },
+            // Custom component for links
+            a: ({ href, children }) => (
+              <a
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.messageLink}
+              >
                 {children}
-              </code>
-            );
-          },
-          // Custom component for links
-          a: ({ href, children }) => (
-            <a
-              href={href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={styles.messageLink}
-            >
-              {children}
-            </a>
-          ),
-        }}
-      >
-        {message.content}
-      </ReactMarkdown>
+              </a>
+            ),
+          }}
+        >
+          {message.content}
+        </ReactMarkdown>
+      </div>
     );
   };
 

@@ -152,8 +152,8 @@ const config = {
 
   // Custom fields for your site
   customFields: {
-    chatApiEndpoint: process.env.CHAT_API_ENDPOINT || (process.env.NODE_ENV === 'production' ? 'https://your-app-name.up.railway.app/api/v1' : 'http://localhost:7860/api/v1'),
-    chatApiKey: process.env.CHAT_API_KEY || 'railway-demo-key',
+    chatApiEndpoint: process.env.CHAT_API_ENDPOINT || (process.env.NODE_ENV === 'production' ? 'https://your-app-name.up.railway.app' : 'http://localhost:7861'),
+    chatApiKey: process.env.CHAT_API_KEY || 'demo-key',
   },
 };
 
