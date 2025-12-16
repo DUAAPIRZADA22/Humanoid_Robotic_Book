@@ -35,10 +35,34 @@ async def ingest_book_content():
 
     # Initialize RAG components
     try:
+        # Load API keys from environment
+        cohere_api_key = os.getenv('COHERE_API_KEY')
+        qdrant_url = os.getenv('QDRANT_URL')
+        qdrant_api_key = os.getenv('QDRANT_API_KEY')
+
+        if not cohere_api_key:
+            logger.error("COHERE_API_KEY not found in environment variables")
+            return
+
+        if not qdrant_url:
+            logger.error("QDRANT_URL not found in environment variables")
+            return
+
+        if not qdrant_api_key:
+            logger.error("QDRANT_API_KEY not found in environment variables")
+            return
+
+        logger.info("Environment variables loaded successfully")
+
         chunker = MarkdownChunker()
-        embedding_service = CohereEmbeddingService()
-        vector_store = QdrantVectorStore()
-        reranker = CohereReranker()
+        embedding_service = CohereEmbeddingService(api_key=cohere_api_key)
+        vector_store = QdrantVectorStore(
+            collection_name="humanoid_robotics_book",
+            embedding_dim=1024,
+            url=qdrant_url,
+            api_key=qdrant_api_key
+        )
+        reranker = CohereReranker(api_key=cohere_api_key)
 
         logger.info("RAG components initialized successfully")
 
