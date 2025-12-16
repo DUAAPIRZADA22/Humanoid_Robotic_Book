@@ -107,10 +107,12 @@ app.add_middleware(
     allow_origins=[
         "https://github.com/DUAAPIRZADA22",
         "http://localhost:3000",
-        "http://localhost:7860"
+        "http://localhost:3001",
+        "http://localhost:7860",
+        "https://humanoid-robotic-book.vercel.app"
     ],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
