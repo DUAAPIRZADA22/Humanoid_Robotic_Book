@@ -313,7 +313,7 @@ async def health_check() -> Dict[str, Any]:
 
 
 @app.get("/")
-async def root() -> Dict[str, str]:
+async def root():
     """Root endpoint."""
     return {
         "message": "Physical AI & Humanoid Robotics Book Chatbot API",
