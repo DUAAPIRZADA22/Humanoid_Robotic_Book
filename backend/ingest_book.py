@@ -114,25 +114,23 @@ async def ingest_book_content():
             logger.info(f"Generated {len(embeddings)} embeddings for {file_path.name}")
 
             # Store in vector database
-            points = []
+            documents = []
             for i, (chunk, embedding) in enumerate(zip(chunks, embeddings)):
-                point = {
+                doc = {
                     "id": f"{file_path.stem}_{i}_{hash(chunk.text[:100])}",
+                    "text": chunk.text,
                     "vector": embedding,
-                    "payload": {
-                        "text": chunk.text,
-                        "metadata": {
-                            **metadata,
-                            "chunk_index": i,
-                            "chunk_text": chunk.text[:200] + "..." if len(chunk.text) > 200 else chunk.text
-                        }
+                    "metadata": {
+                        **metadata,
+                        "chunk_index": i,
+                        "chunk_text": chunk.text[:200] + "..." if len(chunk.text) > 200 else chunk.text
                     }
                 }
-                points.append(point)
+                documents.append(doc)
 
             # Upsert to Qdrant
-            await vector_store.upsert(points)
-            logger.info(f"Stored {len(points)} points in Qdrant for {file_path.name}")
+            await vector_store.upsert(documents)
+            logger.info(f"Stored {len(documents)} documents in Qdrant for {file_path.name}")
 
             total_chunks += len(chunks)
             total_files += 1
