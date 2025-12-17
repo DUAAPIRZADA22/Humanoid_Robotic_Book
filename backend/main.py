@@ -150,17 +150,7 @@ app = FastAPI(
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://github.com/DUAAPIRZADA22",
-        "http://localhost:3000",
-        "http://localhost:3001",
-        "http://localhost:3002",
-        "http://localhost:7860",
-        "https://humanoid-robotic-book.vercel.app",
-        "http://localhost:3000/*",
-        "http://localhost:3001/*",
-        "http://localhost:3002/*"
-    ],
+    allow_origins=["*"],  # Allow all origins for development
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
