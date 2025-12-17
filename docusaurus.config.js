@@ -152,7 +152,7 @@ const config = {
 
   // Custom fields for your site
   customFields: {
-    chatApiEndpoint: process.env.CHAT_API_ENDPOINT || 'http://localhost:7860',
+    chatApiEndpoint: 'http://localhost:7860', // Force localhost for development
     chatApiKey: process.env.CHAT_API_KEY || 'demo-key',
   },
 };

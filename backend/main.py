@@ -155,7 +155,9 @@ app.add_middleware(
         "http://localhost:3000",
         "http://localhost:3001",
         "http://localhost:7860",
-        "https://humanoid-robotic-book.vercel.app"
+        "https://humanoid-robotic-book.vercel.app",
+        "http://localhost:3000/*",
+        "http://localhost:3001/*"
     ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
