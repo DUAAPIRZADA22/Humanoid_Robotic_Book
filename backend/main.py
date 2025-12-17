@@ -15,12 +15,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 import uvicorn
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 from rag.chunking import MarkdownChunker
-from rag.embeddings import CohereEmbeddingService
-from rag.vector_store import QdrantVectorStore
+from rag.embeddings_new import CohereEmbeddingService
+from rag.vector_store_new import QdrantVectorStore
 from rag.retrieval import RetrievalPipeline
-from rag.rerank import CohereReranker
+from rag.rerank_new import CohereReranker
+from rag.llm_service import create_llm_service
 
 
 # Configure logging
@@ -30,12 +35,17 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Reduce httpcore debug noise
+logging.getLogger("httpcore.connection").setLevel(logging.WARNING)
+logging.getLogger("httpcore.http11").setLevel(logging.WARNING)
+
 # Global instances
 chunker = None
 embedding_service = None
 vector_store = None
 retrieval_pipeline = None
 reranker = None
+llm_service = None
 
 
 class ChatRequest(BaseModel):
@@ -56,33 +66,69 @@ class IngestRequest(BaseModel):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Initialize and cleanup resources."""
-    global chunker, embedding_service, vector_store, retrieval_pipeline, reranker
+    global chunker, embedding_service, vector_store, retrieval_pipeline, reranker, llm_service
 
     # Initialize components
     logger.info("Initializing RAG pipeline components...")
 
     chunker = MarkdownChunker(min_chunk_size=50, max_chunk_size=1000)
+
+    # Get API keys with proper error handling
+    cohere_api_key = os.getenv("COHERE_API_KEY")
+    qdrant_api_key = os.getenv("QDRANT_API_KEY")
+    qdrant_url = os.getenv("QDRANT_URL")
+
+    if not cohere_api_key:
+        raise ValueError("COHERE_API_KEY environment variable is required")
+
     embedding_service = CohereEmbeddingService(
-        api_key=os.getenv("COHERE_API_KEY"),
+        api_key=cohere_api_key,
         model="embed-english-v3.0",
-        batch_size=100
+        batch_size=96  # Updated to Cohere's maximum
     )
-    vector_store = QdrantVectorStore(
-        collection_name="humanoid_robotics_book",
-        embedding_dim=1024,  # Cohere embed-english-v3.0 dimension
-        host=os.getenv("QDRANT_HOST", "localhost"),
-        port=int(os.getenv("QDRANT_PORT", "6333")),
-        api_key=os.getenv("QDRANT_API_KEY")
-    )
+
+    # Use Qdrant URL if provided, otherwise use host/port
+    if qdrant_url:
+        vector_store = QdrantVectorStore(
+            collection_name="humanoid_robotics_book",
+            embedding_dim=1024,  # Cohere embed-english-v3.0 dimension
+            url=qdrant_url,
+            api_key=qdrant_api_key
+        )
+    else:
+        vector_store = QdrantVectorStore(
+            collection_name="humanoid_robotics_book",
+            embedding_dim=1024,
+            host=os.getenv("QDRANT_HOST", "localhost"),
+            port=int(os.getenv("QDRANT_PORT", "6333")),
+            api_key=qdrant_api_key
+        )
+
     reranker = CohereReranker(
-        api_key=os.getenv("COHERE_API_KEY"),
-        model="rerank-english-v3.0"
+        api_key=cohere_api_key,
+        model="rerank-v3.5"  # Updated to latest model
     )
     retrieval_pipeline = RetrievalPipeline(
         embedding_service=embedding_service,
         vector_store=vector_store,
         reranker=reranker
     )
+
+    # Initialize LLM service
+    try:
+        llm_service = create_llm_service({
+            "provider": "openai",
+            "model": "gpt-3.5-turbo",
+            "api_key": os.getenv("OPENAI_API_KEY"),
+            "base_url": os.getenv("OPENAI_BASE_URL"),  # Optional for custom endpoints
+            "max_tokens": 1000,
+            "temperature": 0.7
+        })
+        logger.info("LLM service initialized successfully")
+    except Exception as e:
+        logger.warning(f"Failed to initialize LLM service: {e}")
+        logger.warning("Chat will return retrieved chunks without generated answers")
+        llm_service = None
 
     # Ensure collection exists
     await vector_store.ensure_collection()
@@ -249,34 +295,73 @@ async def chat_stream(request: ChatRequest) -> StreamingResponse:
                         break
 
             # Apply reranking if requested
-            if request.use_rerank and unique_results:
-                unique_results = await retrieval_pipeline.rerank(
+            if request.use_rerank and unique_results and reranker:
+                unique_results = await reranker.rerank(
                     query=request.query,
-                    results=unique_results,
-                    top_k=request.top_k
+                    documents=unique_results,
+                    top_n=request.top_k
                 )
 
-            # Send each content chunk
-            for i, result in enumerate(unique_results):
-                chunk_data = {
-                    "type": "content",
-                    "index": i,
-                    "content": result["text"],
-                    "score": result.get("score", 0.0),
-                    "source": result.get("metadata", {}).get("source", ""),
-                    "headers": result.get("metadata", {}).get("headers", [])
+            # Generate answer using LLM if available, otherwise return raw chunks
+            if llm_service and unique_results:
+                # Send context chunks first for transparency
+                for i, result in enumerate(unique_results):
+                    chunk_data = {
+                        "type": "source",
+                        "index": i,
+                        "content": result["text"],
+                        "score": result.get("relevance_score", result.get("score", 0.0)),
+                        "source": result.get("metadata", {}).get("source", ""),
+                        "headers": result.get("metadata", {}).get("headers", [])
+                    }
+                    yield f"data: {json.dumps(chunk_data)}\n\n"
+
+                # Generate and stream the answer
+                yield f"data: {json.dumps({'type': 'answer_start'})}\n\n"
+
+                answer_content = ""
+                async for chunk in llm_service.generate_answer(
+                    query=request.query,
+                    context=unique_results,
+                    stream=True
+                ):
+                    if chunk and not chunk.startswith("Error"):
+                        answer_content += chunk
+                        chunk_data = {
+                            "type": "answer_chunk",
+                            "content": chunk
+                        }
+                        yield f"data: {json.dumps(chunk_data)}\n\n"
+
+                # Send completion with answer summary
+                completion = {
+                    "type": "complete",
+                    "total_sources": len(unique_results),
+                    "has_answer": True,
+                    "answer_length": len(answer_content),
+                    "message": "Response generation complete"
                 }
-                yield f"data: {json.dumps(chunk_data)}\n\n"
+            else:
+                # Fallback to raw chunks if no LLM service
+                for i, result in enumerate(unique_results):
+                    chunk_data = {
+                        "type": "content",
+                        "index": i,
+                        "content": result["text"],
+                        "score": result.get("relevance_score", result.get("score", 0.0)),
+                        "source": result.get("metadata", {}).get("source", ""),
+                        "headers": result.get("metadata", {}).get("headers", [])
+                    }
+                    yield f"data: {json.dumps(chunk_data)}\n\n"
+                    await asyncio.sleep(0.1)
 
-                # Small delay to simulate streaming
-                await asyncio.sleep(0.1)
+                completion = {
+                    "type": "complete",
+                    "total_chunks": len(unique_results),
+                    "has_answer": False,
+                    "message": "Retrieved chunks without LLM generation"
+                }
 
-            # Send completion event
-            completion = {
-                "type": "complete",
-                "total_chunks": len(unique_results),
-                "message": "Response generation complete"
-            }
             yield f"data: {json.dumps(completion)}\n\n"
 
         except Exception as e:
@@ -300,16 +385,30 @@ async def chat_stream(request: ChatRequest) -> StreamingResponse:
 @app.get("/health")
 async def health_check() -> Dict[str, Any]:
     """Health check endpoint."""
-    return {
+    health_status = {
         "status": "healthy",
         "components": {
             "chunker": chunker is not None,
             "embedding_service": embedding_service is not None,
             "vector_store": vector_store is not None,
             "retrieval_pipeline": retrieval_pipeline is not None,
-            "reranker": reranker is not None
+            "reranker": reranker is not None,
+            "llm_service": llm_service is not None
         }
     }
+
+    # Check LLM service health if available
+    if llm_service:
+        try:
+            llm_health = await llm_service.health_check()
+            health_status["llm_health"] = llm_health
+        except Exception as e:
+            health_status["llm_health"] = {
+                "status": "unhealthy",
+                "error": str(e)
+            }
+
+    return health_status
 
 
 @app.get("/")
