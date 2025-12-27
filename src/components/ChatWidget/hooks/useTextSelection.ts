@@ -84,17 +84,8 @@ export function useTextSelection(): UseTextSelectionReturn {
 
     // Check selection length (max 2000 characters)
     if (selectedText.length > 2000) {
-      // Truncate with warning
-      const truncated = selectedText.substring(0, 2000);
-      const range = userSelection.getRangeAt(0);
-
-      // Create new range with truncated text
-      const newRange = document.createRange();
-      newRange.setStart(range.startContainer, range.startOffset);
-      newRange.setEnd(range.startContainer, range.startOffset + 2000);
-
-      userSelection.removeAllRanges();
-      userSelection.addRange(newRange);
+      // Truncate with warning - don't modify the selection, just truncate the stored text
+      // Modifying the selection can cause IndexSizeError if node length < 2000
     }
 
     // Get selection range info

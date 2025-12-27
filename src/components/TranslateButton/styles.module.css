@@ -1,0 +1,129 @@
+/**
+ * Translate Button Styles
+ */
+
+.translateButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: var(--ifm-global-radius);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--ifm-transition-fast);
+  background: var(--ifm-button-background-color);
+  color: var(--ifm-button-color);
+  border: 1px solid var(--ifm-button-border-color);
+  white-space: nowrap;
+}
+
+.translateButton:hover:not(:disabled) {
+  background: var(--ifm-button-background-color-hover);
+  border-color: var(--ifm-button-border-color-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.translateButton:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.translateButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.translateButton.translated {
+  background: var(--ifm-color-success-contrast-background);
+  color: var(--ifm-color-success-contrast-foreground);
+  border-color: var(--ifm-color-success-dark);
+}
+
+/* Icon styling */
+.icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+/* Spinner animation */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* Error Toast */
+.errorToast {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  background: var(--ifm-color-danger-contrast-background);
+  color: var(--ifm-color-danger-contrast-foreground);
+  border-radius: var(--ifm-global-radius);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  animation: slideIn 0.3s ease-out;
+  z-index: 9999;
+  max-width: 400px;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.errorIcon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.closeIcon {
+  margin-left: auto;
+  opacity: 0.7;
+  font-size: 0.9rem;
+}
+
+.errorToast:hover .closeIcon {
+  opacity: 1;
+}
+
+/* RTL Support */
+[dir='rtl'] .translateButton {
+  flex-direction: row-reverse;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .translateButton {
+    padding: 0.35rem 0.7rem;
+    font-size: 0.8rem;
+  }
+
+  .errorToast {
+    left: 1rem;
+    right: 1rem;
+    bottom: 1rem;
+    max-width: none;
+  }
+}

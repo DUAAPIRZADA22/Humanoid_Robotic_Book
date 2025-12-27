@@ -18,8 +18,8 @@ import { ChatError } from '../types/chat';
  * Default API configuration
  */
 const DEFAULT_CONFIG: Partial<ApiConfig> = {
-  timeout: 10000,
-  retries: 3,
+  timeout: 300000,  // Increased to 5 minutes for OpenRouter free tier API calls
+  retries: 2,     // Reduced retries to avoid delay
   headers: {
     'Content-Type': 'application/json',
   },
@@ -192,38 +192,57 @@ async function makeRequest<T>(
 }
 
 /**
- * Send chat message with streaming support
+ * Send chat message with streaming support using SSE (Server-Sent Events)
+ *
+ * This function:
+ * - Uses fetch() + ReadableStream for proper SSE handling
+ * - Parses SSE format: "data: {...}\n\n"
+ * - Detects backend "complete" event to stop reading
+ * - Handles incremental UI updates via onChunk callback
+ * - FIX: Properly detects aborts vs errors to prevent false error logging
+ *
  * @param config - API configuration
  * @param request - Chat request payload
- * @param onChunk - Callback for streaming chunks
- * @param onComplete - Callback for completion
+ * @param token - Auth token (optional, can be null)
+ * @param onChunk - Callback for each streaming chunk
+ * @param onComplete - Callback when stream completes
  * @param onError - Callback for errors
- * @returns Cleanup function
+ * @returns Cleanup function to abort the stream
  */
 export function streamChatMessage(
   config: ApiConfig,
   request: ChatRequest,
+  token: string | null,
   onChunk: (chunk: StreamingChunk) => void,
   onComplete: () => void,
   onError: (error: ChatError) => void
 ): () => void {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), config.timeout);
+  let hasCalledCompletion = false; // FIX: Track if onComplete was called
+
+  // NOTE: No timeout for streaming - let the backend control completion
+  // The backend sends "type":"complete" when done
 
   const url = `${config.endpoint.replace(/\/$/, '')}/chat`;
 
-  console.log('API Request Details:', {
-    url,
-    method: 'POST',
-    config,
-    request
-  });
+  console.log('[SSE] Starting chat stream:', { url, request });
 
+  // FIX: Helper to call completion exactly once
+  const callCompleteOnce = () => {
+    if (!hasCalledCompletion && !controller.signal.aborted) {
+      hasCalledCompletion = true;
+      console.log('[SSE] Stream complete, calling onComplete');
+      onComplete();
+    }
+  };
+
+  // Start the fetch request
   fetch(url, {
     method: 'POST',
     headers: {
       ...config.headers,
       'X-API-Key': config.apiKey,
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
       'Content-Type': 'application/json',
       'Accept': 'text/event-stream',
       'Cache-Control': 'no-cache',
@@ -231,76 +250,130 @@ export function streamChatMessage(
     body: JSON.stringify(request),
     signal: controller.signal,
   })
-    .then(response => {
-      clearTimeout(timeoutId);
-
+    .then(async (response) => {
+      // Check for HTTP errors
       if (!response.ok) {
+        if (response.status === 401) {
+          window.dispatchEvent(new CustomEvent('auth:required'));
+        }
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
+      // Get the ReadableStream reader from response body
       const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-
       if (!reader) {
         throw new Error('Response body is not readable');
       }
 
+      const decoder = new TextDecoder();
       let buffer = '';
+      let isComplete = false;
 
-      function processChunk(): Promise<void> {
-        return reader.read().then(({ done, value }) => {
+      // Read chunks from the stream
+      while (!isComplete && !controller.signal.aborted) {
+        try {
+          const { done, value } = await reader.read();
+
+          // Stream ended naturally
           if (done) {
-            onComplete();
-            return;
+            console.log('[SSE] Stream ended naturally');
+            break;
           }
 
+          // Decode the chunk and add to buffer
           buffer += decoder.decode(value, { stream: true });
+
+          // Split by double newline (SSE message boundary)
           const lines = buffer.split('\n');
+          // Keep the last partial line in buffer (might be incomplete)
           buffer = lines.pop() || '';
 
+          // Process each complete line
           for (const line of lines) {
-            if (line.trim() === '') continue;
+            // Skip empty lines and comments
+            const trimmedLine = line.trim();
+            if (!trimmedLine || trimmedLine.startsWith(':')) {
+              continue;
+            }
 
-            if (line.startsWith('data: ')) {
+            // Parse SSE data line: "data: {...}"
+            if (trimmedLine.startsWith('data: ')) {
+              const data = trimmedLine.slice(6).trim();
+
+              // Check for [DONE] sentinel (OpenAI-style, not used by your backend)
+              if (data === '[DONE]') {
+                console.log('[SSE] Received [DONE] sentinel');
+                isComplete = true;
+                break;
+              }
+
               try {
-                const data = line.slice(6);
-                if (data === '[DONE]') {
-                  onComplete();
-                  return;
-                }
-
+                // Parse JSON chunk
                 const chunk: StreamingChunk = JSON.parse(data);
-                onChunk(chunk);
-              } catch (error) {
-                console.error('Failed to parse chunk:', error);
+                console.log('[SSE] Chunk received:', chunk.type);
+
+                // Handle chunk types
+                if (chunk.type === 'complete') {
+                  // Backend signals completion - stop reading
+                  console.log('[SSE] Received complete signal');
+                  onChunk(chunk); // Notify UI of completion
+                  isComplete = true;
+                  break;
+                } else if (chunk.type === 'error') {
+                  // Backend sent an error
+                  console.error('[SSE] Error from backend:', chunk);
+                  onChunk(chunk);
+                  isComplete = true;
+                  break;
+                } else {
+                  // Normal chunk (metadata, source, answer_chunk, etc.)
+                  onChunk(chunk);
+                }
+              } catch (parseError) {
+                console.error('[SSE] Failed to parse chunk:', data, parseError);
+                // Continue processing other chunks
               }
             }
           }
 
-          return processChunk();
-        });
+          // Exit loop if complete signal received
+          if (isComplete) {
+            break;
+          }
+
+        } catch (readError) {
+          // FIX: Check if this is an abort error BEFORE re-throwing
+          // This prevents the error handler from treating aborts as errors
+          if (controller.signal.aborted) {
+            console.log('[SSE] Stream aborted by user (during read)');
+            return;
+          }
+          throw readError;
+        }
       }
 
-      return processChunk();
-    })
-    .catch(error => {
-      clearTimeout(timeoutId);
+      // Signal completion to caller (only if not aborted)
+      callCompleteOnce();
 
+    })
+    .catch((error) => {
+      // FIX: First check if this was an abort - handle silently
+      if (controller.signal.aborted || error?.name === 'AbortError') {
+        console.log('[SSE] Request cancelled (abort detected)');
+        return; // Don't call onError for user cancellations
+      }
+
+      // Handle fetch/read errors
       let chatError: ChatError;
 
       if (error instanceof Error) {
-        if (error.name === 'AbortError') {
-          chatError = createApiError(
-            ApiErrorType.TIMEOUT_ERROR,
-            'Request timed out',
-            false
-          );
-        } else if (error.message.includes('401')) {
+        if (error.message.includes('401')) {
           chatError = createApiError(
             ApiErrorType.AUTHENTICATION_ERROR,
-            'Invalid API key',
+            'Authentication required. Please sign in.',
             false
           );
+          window.dispatchEvent(new CustomEvent('auth:required'));
         } else if (error.message.includes('429')) {
           chatError = createApiError(
             ApiErrorType.RATE_LIMIT_ERROR,
@@ -322,13 +395,17 @@ export function streamChatMessage(
         );
       }
 
+      console.error('[SSE] Error:', chatError);
       onError(chatError);
     });
 
   // Return cleanup function
   return () => {
-    clearTimeout(timeoutId);
-    controller.abort();
+    // FIX: Only log and abort if we haven't already completed
+    if (!hasCalledCompletion) {
+      console.log('[SSE] Cleanup: aborting stream');
+      controller.abort();
+    }
   };
 }
 

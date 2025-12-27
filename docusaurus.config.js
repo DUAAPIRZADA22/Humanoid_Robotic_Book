@@ -152,8 +152,10 @@ const config = {
 
   // Custom fields for your site
   customFields: {
-    chatApiEndpoint: 'http://localhost:7860', // Force localhost for development
+    chatApiEndpoint: process.env.CHAT_API_ENDPOINT || 'http://localhost:8000',
     chatApiKey: process.env.CHAT_API_KEY || 'demo-key',
+    // Translation service API URL (same as backend chat endpoint)
+    translateApiUrl: process.env.TRANSLATE_API_URL || 'http://localhost:8000',
   },
 };
 

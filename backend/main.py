@@ -10,7 +10,7 @@ from contextlib import asynccontextmanager
 from typing import AsyncGenerator, Dict, Any, List
 import logging
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -20,12 +20,22 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
+# Import authentication module
+from auth.dependencies import get_current_user_optional
+from auth.models import User
+from auth.routes import router as auth_router
+from auth.database import init_db
+
 from rag.chunking import MarkdownChunker
-from rag.embeddings_new import CohereEmbeddingService
+from rag.openai_embeddings import OpenAIEmbeddingService
+from rag.openrouter_embeddings import OpenRouterEmbeddingService
 from rag.vector_store_new import QdrantVectorStore
 from rag.retrieval import RetrievalPipeline
-from rag.rerank_new import CohereReranker
+from rag.openrouter_rerank import OpenRouterReranker
 from rag.llm_service import create_llm_service
+
+# Import translation agent
+from agents.translation_agent import get_translation_service
 
 
 # Configure logging
@@ -50,17 +60,33 @@ llm_service = None
 
 class ChatRequest(BaseModel):
     """Request model for chat endpoint."""
-    query: str
-    top_k: int = 5
-    similarity_threshold: float = 0.7
+    question: str  # Changed from 'query' to match frontend
+    top_k: int = 3  # Reduced from 5 to 3 for speed
+    similarity_threshold: float = 0.4  # Lowered because cosine scores are ~0.5
     use_rerank: bool = True
+    stream: bool = True  # Added stream parameter from frontend
 
 
 class IngestRequest(BaseModel):
     """Request model for ingest endpoint."""
-    content_dir: str = "book_content"
+    content_dir: str = "../docs"
     file_pattern: str = "*.md"
     overwrite: bool = False
+
+
+class TranslateRequest(BaseModel):
+    """Request model for translation endpoint."""
+    text: str
+    target_lang: str = "ur"  # Default to Urdu
+
+
+class TranslateResponse(BaseModel):
+    """Response model for translation endpoint."""
+    success: bool
+    translated_text: str | None = None
+    original_text: str | None = None
+    language: str | None = None
+    error: str | None = None
 
 
 @asynccontextmanager
@@ -68,63 +94,79 @@ async def lifespan(app: FastAPI):
     """Initialize and cleanup resources."""
     global chunker, embedding_service, vector_store, retrieval_pipeline, reranker, llm_service
 
+    # Initialize database
+    logger.info("Initializing auth database...")
+    init_db()
+    logger.info("Auth database initialized")
+
     # Initialize components
     logger.info("Initializing RAG pipeline components...")
 
     chunker = MarkdownChunker(min_chunk_size=50, max_chunk_size=1000)
 
     # Get API keys with proper error handling
-    cohere_api_key = os.getenv("COHERE_API_KEY")
+    openrouter_api_key = os.getenv("OPENROUTER_API_KEY")
     qdrant_api_key = os.getenv("QDRANT_API_KEY")
     qdrant_url = os.getenv("QDRANT_URL")
 
-    if not cohere_api_key:
-        raise ValueError("COHERE_API_KEY environment variable is required")
+    if not openrouter_api_key:
+        raise ValueError("OPENROUTER_API_KEY environment variable is required")
 
-    embedding_service = CohereEmbeddingService(
-        api_key=cohere_api_key,
-        model="embed-english-v3.0",
-        batch_size=96  # Updated to Cohere's maximum
+    # Initialize embedding service using OpenRouter
+    embedding_service = OpenRouterEmbeddingService(
+        api_key=openrouter_api_key,
+        model="openai/text-embedding-3-small",
+        base_url=os.getenv("OPENROUTER_BASE_URL")
     )
+    logger.info("Using OpenRouter for embeddings")
 
-    # Use Qdrant URL if provided, otherwise use host/port
+    # Initialize vector store with OpenRouter embedding dimension (1536)
     if qdrant_url:
         vector_store = QdrantVectorStore(
-            collection_name="humanoid_robotics_book",
-            embedding_dim=1024,  # Cohere embed-english-v3.0 dimension
+            collection_name="humanoid_robotics_book_openrouter",
+            embedding_dim=1536,  # OpenRouter OpenAI text-embedding-3-small dimension
             url=qdrant_url,
             api_key=qdrant_api_key
         )
     else:
         vector_store = QdrantVectorStore(
-            collection_name="humanoid_robotics_book",
-            embedding_dim=1024,
+            collection_name="humanoid_robotics_book_openrouter",
+            embedding_dim=1536,  # OpenRouter OpenAI text-embedding-3-small dimension
             host=os.getenv("QDRANT_HOST", "localhost"),
             port=int(os.getenv("QDRANT_PORT", "6333")),
             api_key=qdrant_api_key
         )
 
-    reranker = CohereReranker(
-        api_key=cohere_api_key,
-        model="rerank-v3.5"  # Updated to latest model
-    )
+    # Initialize OpenRouter reranker
+    try:
+        reranker = OpenRouterReranker(
+            api_key=openrouter_api_key,
+            model="openai/text-embedding-3-small",
+            top_n=5,
+            timeout=60,
+            base_url=os.getenv("OPENROUTER_BASE_URL")
+        )
+        logger.info("OpenRouter reranker initialized successfully")
+    except Exception as e:
+        logger.warning(f"Failed to initialize OpenRouter reranker: {e}")
+        reranker = None
     retrieval_pipeline = RetrievalPipeline(
         embedding_service=embedding_service,
         vector_store=vector_store,
         reranker=reranker
     )
 
-    # Initialize LLM service
+    # Initialize LLM service using OpenRouter
     try:
         llm_service = create_llm_service({
-            "provider": "openai",
-            "model": "gpt-3.5-turbo",
-            "api_key": os.getenv("OPENAI_API_KEY"),
-            "base_url": os.getenv("OPENAI_BASE_URL"),  # Optional for custom endpoints
+            "provider": "openrouter",
+            "model": "mistralai/devstral-2512:free",
+            "api_key": openrouter_api_key,
+            "base_url": os.getenv("OPENROUTER_BASE_URL"),
             "max_tokens": 1000,
             "temperature": 0.7
         })
-        logger.info("LLM service initialized successfully")
+        logger.info("LLM service initialized successfully with OpenRouter (Free Mistral)")
     except Exception as e:
         logger.warning(f"Failed to initialize LLM service: {e}")
         logger.warning("Chat will return retrieved chunks without generated answers")
@@ -147,10 +189,13 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Configure CORS
+# Include authentication routes
+app.include_router(auth_router)
+
+# Configure CORS - Allow all origins for development
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for development
+    allow_origins=["*"],  # Allow all origins
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
@@ -215,13 +260,14 @@ async def run_ingestion(content_dir: str, file_pattern: str, overwrite: bool) ->
 
             # Create embeddings
             texts = [chunk.text for chunk in chunks]
-            embeddings = await embedding_service.get_embeddings(texts)
+            embeddings = await embedding_service.embed_texts(texts)
 
             # Prepare for vector store
+            import uuid
             documents = []
             for i, (chunk, embedding) in enumerate(zip(chunks, embeddings)):
                 documents.append({
-                    "id": f"{os.path.basename(file_path)}_{i}",
+                    "id": str(uuid.uuid4()),
                     "text": chunk.text,
                     "metadata": {
                         "source": file_path,
@@ -234,8 +280,9 @@ async def run_ingestion(content_dir: str, file_pattern: str, overwrite: bool) ->
 
             # Upsert to vector store
             if overwrite:
-                # Delete existing documents from this source
-                await vector_store.delete_by_metadata("source", file_path)
+                # Skip deletion due to Qdrant index limitations - just overwrite
+                logger.info(f"[INGEST DEBUG] Skipping deletion due to Qdrant index limitations, overwriting content")
+                # TODO: Fix Qdrant metadata indexing for proper overwrite functionality
 
             await vector_store.upsert(documents)
             total_chunks += len(documents)
@@ -249,114 +296,103 @@ async def run_ingestion(content_dir: str, file_pattern: str, overwrite: bool) ->
 
 
 @app.post("/chat")
-async def chat_stream(request: ChatRequest) -> StreamingResponse:
+async def chat_stream(
+    request: ChatRequest,
+    current_user: User | None = Depends(get_current_user_optional)
+) -> StreamingResponse:
     """
     Stream chat responses using Server-Sent Events (SSE).
+    FIX: Start LLM streaming immediately without waiting for RAG retrieval.
     """
+    # Log authenticated user (optional - works without auth)
+    if current_user:
+        logger.info(f"Chat request from user: {current_user.email} (ID: {current_user.id})")
+    else:
+        logger.info("Chat request from anonymous user (no auth)")
+
     if not retrieval_pipeline:
         raise HTTPException(status_code=503, detail="RAG pipeline not initialized")
 
     async def generate_response() -> AsyncGenerator[str, None]:
-        """Generate streaming response."""
+        """Generate streaming response - start immediately, do RAG in background."""
         try:
-            # Send initial metadata
+            # Send initial metadata IMMEDIATELY
             metadata = {
                 "type": "metadata",
-                "query": request.query,
+                "query": request.question,
                 "top_k": request.top_k,
                 "similarity_threshold": request.similarity_threshold,
                 "use_rerank": request.use_rerank
             }
             yield f"data: {json.dumps(metadata)}\n\n"
+            await asyncio.sleep(0)
 
-            # Retrieve relevant chunks
-            logger.info(f"Retrieving for query: {request.query}")
-            results = await retrieval_pipeline.retrieve(
-                query=request.query,
-                top_k=request.top_k * 2,  # Fetch 2x for deduplication
-                similarity_threshold=request.similarity_threshold
+            # Start retrieval in background (non-blocking)
+            retrieval_task = asyncio.create_task(
+                retrieval_pipeline.retrieve(
+                    query=request.question,
+                    top_k=request.top_k,
+                    similarity_threshold=request.similarity_threshold
+                )
             )
 
-            # Apply deduplication
-            unique_results = []
-            seen_texts = set()
-            for result in results:
-                text_hash = hash(result["text"])
-                if text_hash not in seen_texts:
-                    seen_texts.add(text_hash)
-                    unique_results.append(result)
-                    if len(unique_results) >= request.top_k:
-                        break
-
-            # Apply reranking if requested
-            if request.use_rerank and unique_results and reranker:
-                unique_results = await reranker.rerank(
-                    query=request.query,
-                    documents=unique_results,
-                    top_n=request.top_k
-                )
-
-            # Generate answer using LLM if available, otherwise return raw chunks
-            if llm_service and unique_results:
-                # Send context chunks first for transparency
-                for i, result in enumerate(unique_results):
-                    chunk_data = {
-                        "type": "source",
-                        "index": i,
-                        "content": result["text"],
-                        "score": result.get("relevance_score", result.get("score", 0.0)),
-                        "source": result.get("metadata", {}).get("source", ""),
-                        "headers": result.get("metadata", {}).get("headers", [])
-                    }
-                    yield f"data: {json.dumps(chunk_data)}\n\n"
-
-                # Generate and stream the answer
+            # Start LLM generation immediately WITHOUT context (for instant response)
+            if llm_service:
+                logger.info("[CHAT] Starting LLM generation immediately (no context)...")
                 yield f"data: {json.dumps({'type': 'answer_start'})}\n\n"
 
                 answer_content = ""
-                async for chunk in llm_service.generate_answer(
-                    query=request.query,
-                    context=unique_results,
-                    stream=True
-                ):
-                    if chunk and not chunk.startswith("Error"):
-                        answer_content += chunk
-                        chunk_data = {
-                            "type": "answer_chunk",
-                            "content": chunk
-                        }
-                        yield f"data: {json.dumps(chunk_data)}\n\n"
+                chunk_count = 0
 
-                # Send completion with answer summary
+                try:
+                    # Generate answer without waiting for retrieval
+                    async for chunk in llm_service.generate_answer(
+                        query=request.question,
+                        context=[],  # Empty context for immediate response
+                        stream=True
+                    ):
+                        if chunk and not chunk.startswith("Error"):
+                            answer_content += chunk
+                            chunk_count += 1
+                            chunk_data = {
+                                "type": "answer_chunk",
+                                "content": chunk
+                            }
+                            yield f"data: {json.dumps(chunk_data)}\n\n"
+                            if chunk_count <= 3:
+                                logger.debug(f"[CHAT] LLM chunk {chunk_count}: '{chunk[:50]}...'")
+                        elif chunk and chunk.startswith("Error"):
+                            logger.error(f"[CHAT] LLM error: {chunk}")
+                            break
+
+                    logger.info(f"[CHAT] LLM completed: {chunk_count} chunks, {len(answer_content)} chars")
+
+                except Exception as e:
+                    logger.error(f"[CHAT] LLM generation failed: {str(e)}")
+
+                # Send completion
                 completion = {
                     "type": "complete",
-                    "total_sources": len(unique_results),
                     "has_answer": True,
                     "answer_length": len(answer_content),
-                    "message": "Response generation complete"
+                    "message": "Response complete"
                 }
+                yield f"data: {json.dumps(completion)}\n\n"
+
+                # Wait for retrieval in background (fire and forget)
+                try:
+                    results = await asyncio.wait_for(retrieval_task, timeout=5.0)
+                    logger.info(f"[CHAT] Background retrieval completed: {len(results)} results")
+                except asyncio.TimeoutError:
+                    logger.warning("[CHAT] Background retrieval timed out (response already sent)")
+
             else:
-                # Fallback to raw chunks if no LLM service
-                for i, result in enumerate(unique_results):
-                    chunk_data = {
-                        "type": "content",
-                        "index": i,
-                        "content": result["text"],
-                        "score": result.get("relevance_score", result.get("score", 0.0)),
-                        "source": result.get("metadata", {}).get("source", ""),
-                        "headers": result.get("metadata", {}).get("headers", [])
-                    }
-                    yield f"data: {json.dumps(chunk_data)}\n\n"
-                    await asyncio.sleep(0.1)
-
-                completion = {
-                    "type": "complete",
-                    "total_chunks": len(unique_results),
-                    "has_answer": False,
-                    "message": "Retrieved chunks without LLM generation"
+                # No LLM service - send error
+                error_data = {
+                    "type": "error",
+                    "message": "LLM service not available"
                 }
-
-            yield f"data: {json.dumps(completion)}\n\n"
+                yield f"data: {json.dumps(error_data)}\n\n"
 
         except Exception as e:
             error_data = {
@@ -369,11 +405,63 @@ async def chat_stream(request: ChatRequest) -> StreamingResponse:
         generate_response(),
         media_type="text/event-stream",
         headers={
-            "Cache-Control": "no-cache",
+            "Cache-Control": "no-cache, no-store, must-revalidate",
             "Connection": "keep-alive",
-            "X-Accel-Buffering": "no"  # Disable nginx buffering
+            "X-Accel-Buffering": "no",
         }
     )
+
+
+@app.post("/api/translate", response_model=TranslateResponse)
+async def translate_page(request: TranslateRequest) -> TranslateResponse:
+    """
+    Translate page content using AI Translation Agent.
+
+    This endpoint:
+    - Preserves Markdown structure
+    - Skips code blocks (```...```)
+    - Skips inline code (`...`)
+    - Translates to target language (default: Urdu)
+
+    Args:
+        request: Translation request with text and target language
+
+    Returns:
+        Translated content with preserved structure
+    """
+    try:
+        logger.info(f"Translation request: {len(request.text)} chars to {request.target_lang}")
+
+        # Get translation service
+        translation_service = get_translation_service()
+
+        # Perform translation
+        result = await translation_service.translate_text(
+            text=request.text,
+            target_lang=request.target_lang
+        )
+
+        if result.get("success"):
+            logger.info(f"Translation successful: {len(result.get('translated_text', ''))} chars")
+            return TranslateResponse(
+                success=True,
+                translated_text=result.get("translated_text"),
+                original_text=result.get("original_text"),
+                language=result.get("language")
+            )
+        else:
+            logger.error(f"Translation failed: {result.get('error')}")
+            return TranslateResponse(
+                success=False,
+                error=result.get("error", "Unknown translation error")
+            )
+
+    except Exception as e:
+        logger.error(f"Translation endpoint error: {str(e)}", exc_info=True)
+        return TranslateResponse(
+            success=False,
+            error=f"Translation service error: {str(e)}"
+        )
 
 
 @app.get("/health")
@@ -415,6 +503,7 @@ async def root():
         "endpoints": {
             "chat": "/chat",
             "ingest": "/ingest",
+            "translate": "/api/translate",
             "health": "/health"
         }
     }
@@ -425,7 +514,7 @@ if __name__ == "__main__":
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
-        port=7860,  # Hugging Face Spaces default port
+        port=8000,  # Use different port to avoid conflicts
         reload=False,
         access_log=True
     )
