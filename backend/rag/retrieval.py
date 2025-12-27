@@ -7,10 +7,11 @@ import asyncio
 from typing import List, Dict, Any, Optional
 import logging
 from dataclasses import dataclass
+import httpx
 
-from .embeddings import CohereEmbeddingService
-from .vector_store import QdrantVectorStore
-from .rerank import CohereReranker
+from .embeddings_new import CohereEmbeddingService
+from .vector_store_new import QdrantVectorStore
+from .rerank_new import CohereReranker
 
 logger = logging.getLogger(__name__)
 
@@ -71,19 +72,27 @@ class RetrievalPipeline:
         Returns:
             List of retrieved documents with scores and metadata
         """
-        top_k = top_k or self.config.top_k
-        similarity_threshold = similarity_threshold or self.config.similarity_threshold
+        logger.info(f"[RETRIEVAL DEBUG] Starting retrieval for query: '{query[:100]}...'")
+        top_k = top_k if top_k is not None else self.config.top_k
+        similarity_threshold = similarity_threshold if similarity_threshold is not None else self.config.similarity_threshold
+
+        logger.info(f"[RETRIEVAL DEBUG] Config: top_k={top_k}, threshold={similarity_threshold}, use_rerank={self.config.use_rerank}")
 
         # Step 1: Create query embedding
+        logger.info(f"[RETRIEVAL DEBUG] Creating query embedding...")
         query_vector = await self._get_query_embedding(query)
         if not query_vector:
-            logger.warning(f"Failed to create embedding for query: {query[:50]}...")
+            logger.error(f"[RETRIEVAL DEBUG] Failed to create embedding for query: {query[:50]}...")
             return []
+
+        logger.info(f"[RETRIEVAL DEBUG] Query embedding created: {len(query_vector)} dimensions")
 
         # Step 2: Determine fetch count (more than requested for reranking)
         fetch_count = int(top_k * self.config.fetch_multiplier)
+        logger.info(f"[RETRIEVAL DEBUG] Will fetch {fetch_count} documents (top_k={top_k}, multiplier={self.config.fetch_multiplier})")
 
         # Step 3: Search vector store
+        logger.info(f"[RETRIEVAL DEBUG] Searching vector store...")
         results = await self._search_vector_store(
             query_vector=query_vector,
             top_k=fetch_count,
@@ -91,32 +100,64 @@ class RetrievalPipeline:
             filters=filters
         )
 
+        logger.info(f"[RETRIEVAL DEBUG] Vector search returned {len(results)} raw results")
+
         # Step 4: Deduplicate results
+        logger.info(f"[RETRIEVAL DEBUG] Starting deduplication on {len(results)} results...")
         results = self._deduplicate_results(results)
+        logger.info(f"[RETRIEVAL DEBUG] After deduplication: {len(results)} results")
 
         # Step 5: Rerank if available
         if self.reranker and self.config.use_rerank and len(results) > top_k:
-            results = await self.rerank.rerank(query, results, top_k)
+            logger.info(f"[RETRIEVAL DEBUG] Starting reranking with {len(results)} documents...")
+            results = await self.reranker.rerank(query, results, top_k)
+            logger.info(f"[RETRIEVAL DEBUG] Reranking completed, final count: {len(results)}")
+        else:
+            if not self.reranker:
+                logger.debug(f"[RETRIEVAL DEBUG] No reranker available")
+            elif not self.config.use_rerank:
+                logger.debug(f"[RETRIEVAL DEBUG] Reranking disabled in config")
+            elif len(results) <= top_k:
+                logger.debug(f"[RETRIEVAL DEBUG] Skipping reranking - results ({len(results)}) <= top_k ({top_k})")
 
         # Step 6: Truncate to requested size
+        original_count = len(results)
         results = results[:top_k]
+        if len(results) < original_count:
+            logger.info(f"[RETRIEVAL DEBUG] Truncated results from {original_count} to {len(results)}")
 
         # Step 7: Add additional metadata
         results = self._enrich_results(results, query)
 
-        logger.info(f"Retrieved {len(results)} documents for query")
+        logger.info(f"[RETRIEVAL DEBUG] Final results: {len(results)} documents for query")
+
+        # Log top few results with scores
+        if results:
+            logger.info(f"[RETRIEVAL DEBUG] Top 3 results:")
+            for i, result in enumerate(results[:3]):
+                score = result.get('score', result.get('relevance_score', 0))
+                text_preview = result.get('text', '')[:100].replace('\n', ' ')
+                logger.info(f"[RETRIEVAL DEBUG]   {i+1}. Score: {score:.4f}, Text: '{text_preview}...'")
+
         return results
 
     async def _get_query_embedding(self, query: str) -> Optional[List[float]]:
         """
-        Get embedding for the query.
+        Get embedding for the query with circuit breaker timeout.
         """
         try:
-            embedding = await self.embedding_service.get_embedding(
-                query,
-                input_type="search_query"
+            # Add timeout wrapper to prevent infinite hangs on OpenRouter API
+            embedding = await asyncio.wait_for(
+                self.embedding_service.embed_single_text(query),
+                timeout=20.0  # 20 second timeout - fail fast instead of hanging
             )
             return embedding
+        except asyncio.TimeoutError:
+            logger.error(f"[CIRCUIT BREAKER] Query embedding timed out after 20s - returning None")
+            return None
+        except httpx.TimeoutException as e:
+            logger.error(f"[CIRCUIT BREAKER] httpx timeout during embedding (OpenRouter API slow): {str(e)}")
+            return None
         except Exception as e:
             logger.error(f"Failed to create query embedding: {str(e)}")
             return None

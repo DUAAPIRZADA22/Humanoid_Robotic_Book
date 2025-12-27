@@ -7,14 +7,15 @@ import asyncio
 import logging
 from pathlib import Path
 import sys
+import uuid
 
 # Add backend to path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from rag.chunking import MarkdownChunker
-from rag.embeddings import CohereEmbeddingService
-from rag.vector_store import QdrantVectorStore
-from rag.rerank import CohereReranker
+from rag.embeddings_new import CohereEmbeddingService
+from rag.vector_store_new import QdrantVectorStore
+from rag.rerank_new import CohereReranker
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -116,14 +117,18 @@ async def ingest_book_content():
             # Store in vector database
             documents = []
             for i, (chunk, embedding) in enumerate(zip(chunks, embeddings)):
+                # Generate a proper UUID for the document ID
+                doc_id = str(uuid.uuid4())
                 doc = {
-                    "id": f"{file_path.stem}_{i}_{hash(chunk.text[:100])}",
+                    "id": doc_id,
                     "text": chunk.text,
                     "vector": embedding,
                     "metadata": {
                         **metadata,
                         "chunk_index": i,
-                        "chunk_text": chunk.text[:200] + "..." if len(chunk.text) > 200 else chunk.text
+                        "chunk_text": chunk.text[:200] + "..." if len(chunk.text) > 200 else chunk.text,
+                        "source_file": str(file_path.relative_to(docs_path)),
+                        "file_title": file_path.stem.replace('-', ' ').replace('_', ' ').title()
                     }
                 }
                 documents.append(doc)
@@ -137,7 +142,6 @@ async def ingest_book_content():
 
             # Clear embeddings to free memory
             del embeddings
-            del points
 
         except Exception as e:
             logger.error(f"Error processing {file_path}: {e}")

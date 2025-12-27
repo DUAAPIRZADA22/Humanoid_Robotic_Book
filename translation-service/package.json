@@ -1,0 +1,31 @@
+{
+  "name": "docusaurus-translation-service",
+  "version": "1.0.0",
+  "description": "AI-powered translation service for Docusaurus using OpenAI Agents SDK + OpenRouter",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "db:migrate": "node src/db/migrate.js",
+    "test": "node src/test.js"
+  },
+  "keywords": ["translation", "docusaurus", "openai", "openrouter"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@fastify/cors": "^9.0.1",
+    "@fastify/helmet": "^11.1.1",
+    "@fastify/rate-limit": "^9.1.0",
+    "fastify": "^4.26.2",
+    "@neondatabase/serverless": "^0.9.0",
+    "openai": "^4.28.0",
+    "dotenv": "^16.4.5",
+    "pino": "^9.0.0",
+    "pino-pretty": "^11.0.0"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

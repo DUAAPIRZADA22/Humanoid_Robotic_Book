@@ -1,0 +1,42 @@
+{
+    "name": "Navigation Suite",
+    "description": "Standard sensor suite for SLAM and autonomous navigation.",
+    "sensors": [
+        {
+            "name": "lidar_main",
+            "type": "lidar",
+            "parent": "base_link",
+            "position": [0.0, 0.0, 0.5],
+            "orientation": [1.0, 0.0, 0.0, 0.0],
+            "config": {
+                "type": "Rotary",
+                "min_range": 0.2,
+                "max_range": 25.0,
+                "horizontal_fov": 360.0,
+                "vertical_fov": 30.0,
+                "rotation_rate": 20.0
+            }
+        },
+        {
+            "name": "camera_front",
+            "type": "camera",
+            "parent": "head_link",
+            "position": [0.1, 0.0, 0.0],
+            "orientation": [1.0, 0.0, 0.0, 0.0],
+            "config": {
+                "resolution": [1280, 720],
+                "type": "rgbd",
+                "fov": 90.0
+            }
+        },
+        {
+            "name": "imu_center",
+            "type": "imu",
+            "parent": "base_link",
+            "position": [0.0, 0.0, 0.0],
+            "config": {
+                "update_rate": 200
+            }
+        }
+    ]
+}

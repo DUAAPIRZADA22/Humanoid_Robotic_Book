@@ -1,10 +1,11 @@
 """
-Qdrant vector store implementation.
-Handles document storage, retrieval, and similarity search.
+Qdrant vector store implementation using latest Qdrant client API.
+Handles document storage, retrieval, and similarity search with updated methods.
 """
 
 import os
 import uuid
+import asyncio
 from typing import List, Dict, Any, Optional, Tuple
 import logging
 from dataclasses import asdict
@@ -13,17 +14,15 @@ from qdrant_client import QdrantClient
 from qdrant_client.models import (
     Distance, VectorParams, PointStruct,
     Filter, FieldCondition, MatchValue,
-    SearchParams, ScoredPoint
+    SearchParams
 )
-from qdrant_client.http.models import CollectionInfo
-from qdrant_client.http.exceptions import UnexpectedResponse
 
 logger = logging.getLogger(__name__)
 
 
 class QdrantVectorStore:
     """
-    Qdrant-based vector store with advanced retrieval capabilities.
+    Qdrant-based vector store using latest client API.
     """
 
     def __init__(
@@ -33,7 +32,8 @@ class QdrantVectorStore:
         host: str = "localhost",
         port: int = 6333,
         api_key: Optional[str] = None,
-        url: Optional[str] = None
+        url: Optional[str] = None,
+        timeout: int = 30
     ):
         """
         Initialize the vector store.
@@ -45,21 +45,34 @@ class QdrantVectorStore:
             port: Qdrant port (if not using url)
             api_key: Qdrant API key
             url: Full Qdrant URL (overrides host/port)
+            timeout: Connection timeout in seconds
         """
         self.collection_name = collection_name
         self.embedding_dim = embedding_dim
+        self.timeout = timeout
 
-        # Initialize client
+        # Initialize client with proper configuration
         if url:
-            self.client = QdrantClient(url=url, api_key=api_key)
+            self.client = QdrantClient(
+                url=url,
+                api_key=api_key,
+                timeout=timeout
+            )
         else:
-            self.client = QdrantClient(host=host, port=port, api_key=api_key)
+            self.client = QdrantClient(
+                host=host,
+                port=port,
+                api_key=api_key,
+                timeout=timeout
+            )
 
         self.collection_config = VectorParams(
             size=embedding_dim,
             distance=Distance.COSINE,
-            on_disk=True  # Persist vectors to disk
+            on_disk=True
         )
+
+        logger.info(f"Initialized QdrantVectorStore for collection: {collection_name}")
 
     async def ensure_collection(self) -> bool:
         """
@@ -99,7 +112,7 @@ class QdrantVectorStore:
 
     async def upsert(self, documents: List[Dict[str, Any]]) -> None:
         """
-        Upsert documents into the vector store.
+        Upsert documents into the vector store using latest API.
 
         Args:
             documents: List of documents with 'id', 'text', 'metadata', and 'vector'
@@ -121,7 +134,7 @@ class QdrantVectorStore:
                 )
                 points.append(point)
 
-            # Batch upsert
+            # Batch upsert with reasonable batch size
             batch_size = 100
             for i in range(0, len(points), batch_size):
                 batch = points[i:i + batch_size]
@@ -145,7 +158,7 @@ class QdrantVectorStore:
         filter: Optional[Filter] = None
     ) -> List[Dict[str, Any]]:
         """
-        Search for similar documents.
+        Search for similar documents using latest query_points API.
 
         Args:
             query_vector: Query embedding
@@ -157,26 +170,24 @@ class QdrantVectorStore:
             List of search results with scores
         """
         try:
-            # Search parameters
-            search_params = SearchParams(
-                hnsw_ef=128,
-                exact=False  # Use approximate search for speed
-            )
+            # Ensure query_vector is a list (not tuple or numpy array)
+            if isinstance(query_vector, tuple):
+                query_vector = list(query_vector)
+            elif hasattr(query_vector, 'tolist'):  # Handle numpy arrays
+                query_vector = query_vector.tolist()
 
-            # Perform search
+            # Use the latest query_points API
             results = self.client.query_points(
                 collection_name=self.collection_name,
                 query=query_vector,
                 query_filter=filter,
-                using=None,
                 limit=top_k,
-                offset=None,
+                score_threshold=score_threshold if score_threshold > 0 else None,
                 with_payload=True,
-                with_vectors=False,
-                score_threshold=score_threshold
+                with_vectors=False
             )
 
-            # Convert results
+            # Convert results to consistent format
             search_results = []
             for result in results.points:
                 search_results.append({
@@ -202,9 +213,6 @@ class QdrantVectorStore:
     ) -> List[Dict[str, Any]]:
         """
         Perform hybrid search combining vector and text search.
-
-        Note: This is a simplified implementation. A full implementation
-        would require a separate text index like BM25.
         """
         # For now, perform vector search with keyword filtering
         keywords = self._extract_keywords(text_query)
@@ -257,12 +265,6 @@ class QdrantVectorStore:
     async def get_document(self, doc_id: str) -> Optional[Dict[str, Any]]:
         """
         Retrieve a specific document by ID.
-
-        Args:
-            doc_id: Document ID
-
-        Returns:
-            Document or None if not found
         """
         try:
             result = self.client.retrieve(
@@ -285,34 +287,20 @@ class QdrantVectorStore:
             logger.error(f"Failed to retrieve document {doc_id}: {str(e)}")
             return None
 
-    async def delete(self, doc_ids: List[str]) -> None:
+    async def count_documents(self) -> int:
         """
-        Delete documents by IDs.
-
-        Args:
-            doc_ids: List of document IDs to delete
+        Count documents in the collection.
         """
-        if not doc_ids:
-            return
-
         try:
-            self.client.delete(
-                collection_name=self.collection_name,
-                points_selector=doc_ids
-            )
-            logger.info(f"Deleted {len(doc_ids)} documents")
-
+            result = self.client.count(collection_name=self.collection_name)
+            return result.count
         except Exception as e:
-            logger.error(f"Failed to delete documents: {str(e)}")
-            raise
+            logger.error(f"Failed to count documents: {str(e)}")
+            return 0
 
     async def delete_by_metadata(self, key: str, value: Any) -> None:
         """
         Delete documents by metadata key-value pair.
-
-        Args:
-            key: Metadata key
-            value: Metadata value
         """
         try:
             filter = Filter(
@@ -334,51 +322,9 @@ class QdrantVectorStore:
             logger.error(f"Failed to delete by metadata: {str(e)}")
             raise
 
-    async def get_collection_info(self) -> CollectionInfo:
-        """
-        Get information about the collection.
-
-        Returns:
-            Collection information
-        """
-        try:
-            return self.client.get_collection(self.collection_name)
-        except Exception as e:
-            logger.error(f"Failed to get collection info: {str(e)}")
-            raise
-
-    async def count_documents(self) -> int:
-        """
-        Count documents in the collection.
-
-        Returns:
-            Number of documents
-        """
-        try:
-            result = self.client.count(collection_name=self.collection_name)
-            return result.count
-        except Exception as e:
-            logger.error(f"Failed to count documents: {str(e)}")
-            return 0
-
-    async def clear_collection(self) -> None:
-        """
-        Clear all documents from the collection.
-        """
-        try:
-            self.client.delete_collection(self.collection_name)
-            await self.ensure_collection()
-            logger.info(f"Cleared collection: {self.collection_name}")
-        except Exception as e:
-            logger.error(f"Failed to clear collection: {str(e)}")
-            raise
-
     async def health_check(self) -> Dict[str, Any]:
         """
         Check the health of the vector store.
-
-        Returns:
-            Health status information
         """
         try:
             # Check if collection exists
@@ -392,7 +338,7 @@ class QdrantVectorStore:
                 }
 
             # Get collection info
-            info = await self.get_collection_info()
+            info = self.client.get_collection(self.collection_name)
             doc_count = await self.count_documents()
 
             return {
@@ -408,3 +354,14 @@ class QdrantVectorStore:
                 "status": "unhealthy",
                 "error": str(e)
             }
+
+    def __del__(self):
+        """
+        Cleanup when the object is destroyed.
+        """
+        try:
+            if hasattr(self, 'client'):
+                # Qdrant client doesn't need explicit cleanup in most cases
+                pass
+        except Exception:
+            pass
