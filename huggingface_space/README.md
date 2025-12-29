@@ -1,5 +1,5 @@
 ---
-title: Humanoid Robotics Book Backend
+title: Hackathon Book Backend
 emoji: 🤖
 colorFrom: blue
 colorTo: purple
@@ -8,7 +8,7 @@ pinned: false
 license: mit
 ---
 
-# Humanoid Robotics Book Chatbot Backend
+# Hackathon Book Chatbot Backend
 
 FastAPI backend for the Physical AI & Humanoid Robotics book chatbot with RAG pipeline.
 
@@ -29,7 +29,7 @@ Set these in the Space settings (Settings → Variables):
 - `QDRANT_API_KEY` - Qdrant API key (if using cloud)
 - `QDRANT_HOST` - Qdrant host (alternative to URL)
 - `QDRANT_PORT` - Qdrant port (default: 6333)
-- `CORS_ORIGINS` - JSON array of allowed CORS origins (e.g., `["https://your-frontend.vercel.app"]`)
+- `CORS_ORIGINS` - JSON array of allowed CORS origins (e.g., `["https://humanoid-robotic-book-livid.vercel.app"]`)
 
 ## API Endpoints
 
@@ -45,3 +45,5 @@ This Space runs on **port 8000**.
 ## Deployment
 
 This Space uses Docker SDK. Click "Settings" to configure your environment variables.
+
+**API Endpoint**: https://DuaaPirzada-hackathon-book.hf.space
