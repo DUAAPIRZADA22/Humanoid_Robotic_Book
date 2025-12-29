@@ -510,11 +510,12 @@ async def root():
 
 
 if __name__ == "__main__":
-    # Run the app
+    # Run the app - read PORT from environment (default 8000)
+    port = int(os.getenv("PORT", 8000))
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
-        port=8000,  # Use different port to avoid conflicts
+        port=port,
         reload=False,
         access_log=True
     )
