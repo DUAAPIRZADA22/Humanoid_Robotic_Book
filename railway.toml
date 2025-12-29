@@ -1,13 +1,8 @@
 [build]
-# Use DOCKERFILE builder with explicit configuration
+# Remove dockerfilePath to let Railway auto-detect from rootDirectory
 builder = "DOCKERFILE"
+# dockerfilePath = "Dockerfile"  # Removed - will auto-detect backend/Dockerfile
 
-# Dockerfile path - if rootDirectory is set to "backend" in Railway UI,
-# then dockerfilePath should be just "Dockerfile"
-# If no rootDirectory is set, use "backend/Dockerfile"
-dockerfilePath = "Dockerfile"
-
-# IMPORTANT: In Railway UI Settings, set Root Directory to: backend
 watchPatterns = ["**/*.py"]
 
 [deploy]
