@@ -1,11 +1,9 @@
 /**
  * Message bubble component for displaying chat messages
- * @fileoverview Individual message display with markdown rendering
+ * @fileoverview Individual message display with plain text rendering (no markdown)
  */
 
 import React, { memo } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import { ChatMessage } from '../types/chat';
 import styles from '../styles/ChatWidget.module.css';
 
@@ -40,52 +38,11 @@ export const MessageBubble = memo<MessageBubbleProps>(function MessageBubble({
   };
 
   /**
-   * Render message content with markdown support
+   * Render message content - plain text only (no markdown for fast responses)
    */
   const renderContent = () => {
-    if (isUser) {
-      // User messages are plain text
-      return <p className={styles.messageText}>{message.content}</p>;
-    }
-
-    // Assistant messages support markdown
-    return (
-      <div className={styles.markdownContent}>
-        <ReactMarkdown
-          remarkPlugins={[remarkGfm]}
-          components={{
-            // Custom component for code blocks
-            code: ({ node, inline, className, children, ...props }) => {
-              const match = /language-(\w+)/.exec(className || '');
-              return !inline && match ? (
-                <pre className={styles.codeBlock}>
-                  <code className={className} {...props}>
-                    {children}
-                  </code>
-                </pre>
-              ) : (
-                <code className={styles.inlineCode} {...props}>
-                  {children}
-                </code>
-              );
-            },
-            // Custom component for links
-            a: ({ href, children }) => (
-              <a
-                href={href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={styles.messageLink}
-              >
-                {children}
-              </a>
-            ),
-          }}
-        >
-          {message.content}
-        </ReactMarkdown>
-      </div>
-    );
+    // Both user and assistant messages are plain text
+    return <p className={styles.messageText}>{message.content}</p>;
   };
 
   return (

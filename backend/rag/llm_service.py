@@ -110,19 +110,25 @@ class LLMService:
         # Build context string
         context_text = self._build_context(context)
 
-        # Create system prompt
-        system_prompt = """You are a helpful AI assistant answering questions about Physical AI and Humanoid Robotics.
-Use the provided context to answer the user's question accurately and comprehensively.
-If the context doesn't contain enough information, say so politely.
-Always base your answers on the provided context."""
+        # Create system prompt - fast, concise, plain text
+        system_prompt = """You are a fast, low-latency conversational assistant about Physical AI and Humanoid Robotics.
 
-        # Create user prompt
-        user_prompt = f"""Context:
-{context_text}
+CRITICAL RULES:
+1. Keep responses SHORT and DIRECT by default (1-3 sentences unless asked for detail)
+2. Use PLAIN TEXT only - no markdown, no bold, no headers, no bullet points
+3. NO emojis - ever
+4. NO filler phrases like "Let me think", "Here's a detailed explanation", etc.
+5. Start answering immediately - no introduction
+6. If the question is unclear, respond with a short clarification question
+
+Answer based on the provided context. If context is insufficient, say so briefly."""
+
+        # Create user prompt - simple and direct
+        user_prompt = f"""Context: {context_text}
 
 Question: {query}
 
-Please provide a comprehensive answer based on the context above."""
+Answer directly and briefly."""
 
         try:
             if self.provider == "openrouter":
@@ -174,7 +180,7 @@ Please provide a comprehensive answer based on the context above."""
                 self.client.chat.completions.create(
                     model=self.model,
                     messages=messages,
-                    max_tokens=min(self.max_tokens, 800),  # Reasonable limit
+                    max_tokens=self.max_tokens,  # Use configured limit (300 for short responses)
                     temperature=self.temperature,
                     stream=True
                 ),
@@ -362,11 +368,11 @@ Please provide a comprehensive answer based on the context above."""
             }
 
 
-# Default configuration
+# Default configuration - optimized for fast, short responses
 DEFAULT_LLM_CONFIG = {
     "provider": "openrouter",
     "model": "mistralai/devstral-2512:free",
-    "max_tokens": 1000,
+    "max_tokens": 300,  # Reduced for shorter, faster responses
     "temperature": 0.7
 }
 

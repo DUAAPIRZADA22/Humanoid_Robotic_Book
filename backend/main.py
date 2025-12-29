@@ -156,17 +156,17 @@ async def lifespan(app: FastAPI):
         reranker=reranker
     )
 
-    # Initialize LLM service using OpenRouter
+    # Initialize LLM service using OpenRouter (optimized for fast, short responses)
     try:
         llm_service = create_llm_service({
             "provider": "openrouter",
             "model": "mistralai/devstral-2512:free",
             "api_key": openrouter_api_key,
             "base_url": os.getenv("OPENROUTER_BASE_URL"),
-            "max_tokens": 1000,
+            "max_tokens": 300,  # Short responses for speed
             "temperature": 0.7
         })
-        logger.info("LLM service initialized successfully with OpenRouter (Free Mistral)")
+        logger.info("LLM service initialized successfully with OpenRouter (Fast Mode)")
     except Exception as e:
         logger.warning(f"Failed to initialize LLM service: {e}")
         logger.warning("Chat will return retrieved chunks without generated answers")
