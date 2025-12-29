@@ -7,7 +7,11 @@
 FROM ubuntu:22.04
 
 # Build argument for cache busting - pass different value to force rebuild
-ARG BUILD_TIMESTAMP=2024-12-30-00:30
+ARG BUILD_TIMESTAMP=2024-12-30-01:20-FORCE-REBUILD
+
+# Add label with timestamp to force cache invalidation
+LABEL build.timestamp="${BUILD_TIMESTAMP}"
+LABEL build.cache_bust="true"
 
 # Prevent interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
@@ -37,8 +41,12 @@ RUN python --version && pip --version
 # Set working directory
 WORKDIR /app
 
+# Cache busting - use timestamp in ENV to invalidate all subsequent layers
+ENV CACHE_BUST="${BUILD_TIMESTAMP}"
+
 # Cache busting - use timestamp in a RUN command to invalidate cache
-RUN echo "Build timestamp: ${BUILD_TIMESTAMP}"
+RUN echo "Build timestamp: ${BUILD_TIMESTAMP}" && \
+    echo "Cache bust: ${CACHE_BUST}"
 
 # Copy requirements first for better caching
 COPY requirements.txt .
