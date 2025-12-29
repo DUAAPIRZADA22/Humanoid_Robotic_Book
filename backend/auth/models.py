@@ -3,24 +3,12 @@ SQLModel database models for User Authentication System.
 
 This module defines all database models for user accounts, preferences,
 sessions, and password reset tokens.
-
-NOTE: Requires sqlmodel to be installed.
 """
 
 from typing import Optional, List
 from datetime import datetime
+from sqlmodel import SQLModel, Field, Relationship
 from enum import Enum
-
-# Try to import SQLModel - fail gracefully if not available
-try:
-    from sqlmodel import SQLModel, Field, Relationship
-    SQLMODEL_AVAILABLE = True
-except ImportError:
-    SQLMODEL_AVAILABLE = False
-    # Create stub classes for type checking
-    SQLModel = object
-    Field = lambda **kwargs: None
-    Relationship = lambda **kwargs: None
 
 
 class User(SQLModel, table=True):

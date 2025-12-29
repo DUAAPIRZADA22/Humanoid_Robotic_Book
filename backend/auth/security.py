@@ -2,25 +2,15 @@
 Security utilities for User Authentication System.
 
 This module provides password hashing, verification, and JWT token management.
-
-NOTE: Requires bcrypt and PyJWT to be installed.
 """
 
 import os
 import re
+import bcrypt
+import jwt
 from datetime import datetime, timedelta
 from typing import Optional, Tuple
 from hashlib import sha256
-
-# Try to import security dependencies
-try:
-    import bcrypt
-    import jwt
-    SECURITY_AVAILABLE = True
-except ImportError:
-    SECURITY_AVAILABLE = False
-    bcrypt = None
-    jwt = None
 
 
 # Configuration

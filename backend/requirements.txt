@@ -1,12 +1,10 @@
-# ==============================================
-# FastAPI Backend for Humanoid Robotics Book
-# Railway Production Dependencies
-# ==============================================
+Flask==2.3.3
+Flask-CORS==4.0.0
+gunicorn==21.2.0
 
-# FastAPI and ASGI Server
+# FastAPI for the main application
 fastapi>=0.104.0
 uvicorn[standard]>=0.24.0
-python-multipart>=0.0.6
 
 # RAG and AI dependencies
 qdrant-client>=1.6.0
@@ -21,16 +19,12 @@ markdown>=3.5.0
 python-docx>=0.8.11
 PyPDF2>=3.0.0
 
-# Data validation
-pydantic>=2.0.0
+# Database and Authentication
+sqlmodel>=0.0.14
+passlib[bcrypt]>=1.7.4
+PyJWT>=2.8.0
+bcrypt>=4.0.0
 
-# ==============================================
-# REMOVED (unused):
-# - Flask==2.3.3 (old app.py, not used)
-# - Flask-CORS==4.0.0 (old app.py, not used)
-# - gunicorn==21.2.0 (not needed with uvicorn)
-# - sqlmodel (auth optional, no PostgreSQL on Railway)
-# - passlib[bcrypt] (auth optional)
-# - PyJWT (auth optional)
-# - bcrypt (auth optional)
-# ==============================================
+# Utilities
+pydantic>=2.0.0
+python-multipart>=0.0.6
