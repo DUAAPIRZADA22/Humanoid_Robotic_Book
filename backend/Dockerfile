@@ -11,12 +11,14 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 # Install Python 3.10 and all system dependencies
 # Note: Ubuntu 22.04 ships with Python 3.10 by default
+# Added libpq-dev for psycopg2-binary support
 RUN apt-get update && apt-get install -y \
     python3 \
     python3-pip \
     python3-dev \
     python3-venv \
     build-essential \
+    libpq-dev \
     curl \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/* \
@@ -33,6 +35,7 @@ RUN python --version && pip --version
 WORKDIR /app
 
 # Copy requirements first for better caching
+# Cache bust: 2024-12-30-00:20 - Force rebuild for psycopg2-binary
 COPY requirements.txt .
 
 # Upgrade pip and install Python dependencies
