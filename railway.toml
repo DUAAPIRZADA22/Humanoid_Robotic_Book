@@ -1,9 +1,9 @@
 [build]
-# Remove dockerfilePath to let Railway auto-detect from rootDirectory
 builder = "DOCKERFILE"
-# dockerfilePath = "Dockerfile"  # Removed - will auto-detect backend/Dockerfile
+dockerfilePath = "Dockerfile"
+rootDirectory = "backend"
 
-watchPatterns = ["**/*.py"]
+watchPatterns = ["backend/**/*.py"]
 
 [deploy]
 healthcheckPath = "/health"
