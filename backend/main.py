@@ -192,13 +192,53 @@ app = FastAPI(
 # Include authentication routes
 app.include_router(auth_router)
 
-# Configure CORS - Allow all origins for development
+# Configure CORS - Read from environment variables
+def parse_cors_origins() -> List[str]:
+    """Parse CORS_ORIGINS from environment variable."""
+    cors_origins_str = os.getenv("CORS_ORIGINS")
+    if cors_origins_str:
+        try:
+            import json
+            origins = json.loads(cors_origins_str)
+            if isinstance(origins, list):
+                return origins
+        except json.JSONDecodeError:
+            logger.warning(f"Failed to parse CORS_ORIGINS: {cors_origins_str}")
+
+    # Fallback to default origins
+    return [
+        "https://humanoid-robotic-book-livid.vercel.app",
+        "http://localhost:3000",
+        "http://localhost:7860",
+        "http://localhost:8000",
+    ]
+
+def parse_cors_list(env_var: str, default: List[str]) -> List[str]:
+    """Parse CORS list from environment variable."""
+    cors_str = os.getenv(env_var)
+    if cors_str:
+        try:
+            import json
+            items = json.loads(cors_str)
+            if isinstance(items, list):
+                return items
+        except json.JSONDecodeError:
+            logger.warning(f"Failed to parse {env_var}: {cors_str}")
+    return default
+
+# Get CORS configuration from environment
+cors_origins = parse_cors_origins()
+cors_methods = parse_cors_list("CORS_METHODS", ["GET", "POST", "PUT", "DELETE", "OPTIONS"])
+cors_headers = parse_cors_list("CORS_HEADERS", ["Content-Type", "Authorization", "X-API-Key"])
+
+logger.info(f"CORS configured for origins: {cors_origins}")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins
+    allow_origins=cors_origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["*"],
+    allow_methods=cors_methods,
+    allow_headers=cors_headers,
 )
 
 
