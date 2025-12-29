@@ -20,11 +20,31 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
-# Import authentication module
-from auth.dependencies import get_current_user_optional
-from auth.models import User
-from auth.routes import router as auth_router
-from auth.database import init_db
+# Import authentication module (LAZY - defer import to prevent crash if psycopg2 missing)
+get_current_user_optional = None
+User = None
+auth_router = None
+init_db = None
+
+try:
+    from auth.dependencies import get_current_user_optional as _get_current_user_optional
+    from auth.models import User as _User
+    from auth.routes import router as _auth_router
+    from auth.database import init_db as _init_db
+
+    get_current_user_optional = _get_current_user_optional
+    User = _User
+    auth_router = _auth_router
+    init_db = _init_db
+    AUTH_AVAILABLE = True
+except ImportError as e:
+    logger.warning(f"Auth module not available (psycopg2 may not be installed): {e}")
+    AUTH_AVAILABLE = False
+
+    # Create no-op dependency for when auth is disabled
+    async def _no_auth_user() -> None:
+        return None
+    get_current_user_optional = _no_auth_user
 
 from rag.chunking import MarkdownChunker
 from rag.openai_embeddings import OpenAIEmbeddingService
@@ -94,10 +114,17 @@ async def lifespan(app: FastAPI):
     """Initialize and cleanup resources."""
     global chunker, embedding_service, vector_store, retrieval_pipeline, reranker, llm_service
 
-    # Initialize database
-    logger.info("Initializing auth database...")
-    init_db()
-    logger.info("Auth database initialized")
+    # Initialize database (only if auth is available)
+    if AUTH_AVAILABLE and init_db:
+        try:
+            logger.info("Initializing auth database...")
+            init_db()
+            logger.info("Auth database initialized")
+        except Exception as e:
+            logger.warning(f"Failed to initialize auth database: {e}")
+            logger.warning("Continuing without authentication")
+    else:
+        logger.info("Auth module not available - running without authentication")
 
     # Initialize components
     logger.info("Initializing RAG pipeline components...")
@@ -189,8 +216,12 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Include authentication routes
-app.include_router(auth_router)
+# Include authentication routes (only if available)
+if AUTH_AVAILABLE and auth_router:
+    app.include_router(auth_router)
+    logger.info("Authentication routes registered")
+else:
+    logger.info("Authentication routes not available")
 
 # Configure CORS - Read from environment variables
 def parse_cors_origins() -> List[str]:

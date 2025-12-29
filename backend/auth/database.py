@@ -15,20 +15,40 @@ DATABASE_URL = getenv(
     "postgresql://user:password@localhost/humanoid_robotic_book"
 )
 
-# Create database engine with pool settings for cloud databases
-# Neon PostgreSQL requires pool_pre_ping and shorter pool_recycle
-engine = create_engine(
-    DATABASE_URL,
-    echo=False,
-    pool_pre_ping=True,  # Verify connections before using
-    pool_recycle=300,     # Recycle connections every 5 minutes
-    pool_size=5,          # Smaller pool for Neon free tier
-    max_overflow=10,
-    connect_args={
-        "sslmode": "require",
-        "connect_timeout": 10
-    }
-)
+# Global engine (lazy initialization - only created when needed)
+_engine = None
+
+
+def _get_engine():
+    """Get or create the database engine (lazy initialization)."""
+    global _engine
+    if _engine is None:
+        # Create database engine with pool settings for cloud databases
+        # Neon PostgreSQL requires pool_pre_ping and shorter pool_recycle
+        _engine = create_engine(
+            DATABASE_URL,
+            echo=False,
+            pool_pre_ping=True,  # Verify connections before using
+            pool_recycle=300,     # Recycle connections every 5 minutes
+            pool_size=5,          # Smaller pool for Neon free tier
+            max_overflow=10,
+            connect_args={
+                "sslmode": "require",
+                "connect_timeout": 10
+            }
+        )
+    return _engine
+
+
+# Lazy engine descriptor for module-level access
+class _LazyEngine:
+    """Lazy engine descriptor - only creates engine when accessed."""
+    def __get__(self, obj, objtype=None):
+        return _get_engine()
+
+
+# Module-level engine (lazy)
+engine = _LazyEngine()
 
 
 def get_session():
