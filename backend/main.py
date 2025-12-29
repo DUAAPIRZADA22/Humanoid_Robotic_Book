@@ -7,7 +7,7 @@ import os
 import asyncio
 import json
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator, Dict, Any, List, Optional
+from typing import AsyncGenerator, Dict, Any, List
 import logging
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Depends
@@ -20,47 +20,11 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
-# Configure logging FIRST (needed before auth import)
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
-logger = logging.getLogger(__name__)
-
-# Reduce httpcore debug noise
-logging.getLogger("httpcore.connection").setLevel(logging.WARNING)
-logging.getLogger("httpcore.http11").setLevel(logging.WARNING)
-
-# Import authentication module (OPTIONAL - requires PostgreSQL database)
-AUTH_ENABLED = False
-get_current_user_optional = None
-auth_router = None
-User = None
-
-try:
-    from auth.dependencies import get_current_user_optional as _get_current_user_optional
-    from auth.models import User as _User
-    from auth.routes import router as _auth_router
-    from auth.database import init_db as _init_db
-
-    AUTH_ENABLED = True
-    get_current_user_optional = _get_current_user_optional
-    auth_router = _auth_router
-    User = _User
-    init_db = _init_db
-    logger.info("Authentication module loaded successfully")
-except ImportError as e:
-    logger.warning(f"Authentication module not available: {e}")
-    logger.warning("Running without authentication (PostgreSQL not configured)")
-    AUTH_ENABLED = False
-
-    # Create no-op dependency for when auth is disabled
-    async def _no_auth_user() -> None:
-        return None
-
-    get_current_user_optional = _no_auth_user
-    User = None
-    auth_router = None
+# Import authentication module
+from auth.dependencies import get_current_user_optional
+from auth.models import User
+from auth.routes import router as auth_router
+from auth.database import init_db
 
 from rag.chunking import MarkdownChunker
 from rag.openai_embeddings import OpenAIEmbeddingService
@@ -73,6 +37,17 @@ from rag.llm_service import create_llm_service
 # Import translation agent
 from agents.translation_agent import get_translation_service
 
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
+
+# Reduce httpcore debug noise
+logging.getLogger("httpcore.connection").setLevel(logging.WARNING)
+logging.getLogger("httpcore.http11").setLevel(logging.WARNING)
 
 # Global instances
 chunker = None
@@ -119,15 +94,10 @@ async def lifespan(app: FastAPI):
     """Initialize and cleanup resources."""
     global chunker, embedding_service, vector_store, retrieval_pipeline, reranker, llm_service
 
-    # Initialize database (OPTIONAL - only if auth module is available)
-    if AUTH_ENABLED:
-        try:
-            logger.info("Initializing auth database...")
-            init_db()
-            logger.info("Auth database initialized")
-        except Exception as e:
-            logger.warning(f"Failed to initialize auth database: {e}")
-            logger.warning("Continuing without authentication")
+    # Initialize database
+    logger.info("Initializing auth database...")
+    init_db()
+    logger.info("Auth database initialized")
 
     # Initialize components
     logger.info("Initializing RAG pipeline components...")
@@ -219,12 +189,8 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Include authentication routes (OPTIONAL)
-if auth_router:
-    app.include_router(auth_router)
-    logger.info("Authentication routes registered")
-else:
-    logger.info("Authentication routes not available (PostgreSQL not configured)")
+# Include authentication routes
+app.include_router(auth_router)
 
 # Configure CORS - Read from environment variables
 def parse_cors_origins() -> List[str]:
@@ -372,7 +338,7 @@ async def run_ingestion(content_dir: str, file_pattern: str, overwrite: bool) ->
 @app.post("/chat")
 async def chat_stream(
     request: ChatRequest,
-    current_user: Any = Depends(get_current_user_optional)
+    current_user: User | None = Depends(get_current_user_optional)
 ) -> StreamingResponse:
     """
     Stream chat responses using Server-Sent Events (SSE).
