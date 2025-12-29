@@ -22,10 +22,11 @@ ENV/
 *.swo
 *~
 
-# Environment variables
+# Environment variables (keep .env.railway for Docker build context)
 .env
 .env.local
 .env.*.local
+.env.example
 
 # Database
 *.db
@@ -44,10 +45,6 @@ Thumbs.db
 .git/
 .gitignore
 
-# Docker
-Dockerfile
-.dockerignore
-
 # Documentation
 docs/
 *.md
@@ -62,7 +59,7 @@ htmlcov/
 tmp/
 temp/
 *.tmp
+nul
 
-# Railway specific
+# Railway specific (keep railway.json for Docker build context)
 .nipkg
-Railway.toml

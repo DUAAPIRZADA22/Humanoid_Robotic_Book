@@ -10,20 +10,21 @@ FROM ubuntu:22.04
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Install Python 3.10 and all system dependencies
+# Note: Ubuntu 22.04 ships with Python 3.10 by default
 RUN apt-get update && apt-get install -y \
-    python3.10 \
+    python3 \
     python3-pip \
-    python3.10-dev \
+    python3-dev \
     python3-venv \
     build-essential \
     curl \
-    libglib2.0-0 \
+    ca-certificates \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
-# Set Python 3.10 as default
-RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.10 1 && \
-    update-alternatives --install /usr/bin/pip pip /usr/bin/pip3 1
+# Create symbolic links for python/pip (Ubuntu 22.04 uses python3)
+RUN ln -sf /usr/bin/python3 /usr/bin/python && \
+    ln -sf /usr/bin/pip3 /usr/bin/pip
 
 # Verify Python version
 RUN python --version && pip --version
@@ -48,7 +49,6 @@ RUN useradd -m -u 1000 appuser && \
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    PATH="/home/appuser/.local/bin:$PATH" \
     PORT=8000
 
 # Switch to non-root user
