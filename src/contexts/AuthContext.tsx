@@ -51,15 +51,26 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 const ENCRYPTION_KEY = (typeof process !== 'undefined' && process.env?.AUTH_ENCRYPTION_KEY) || 'default-auth-key-change-in-production';
 
 /**
- * API base URL for backend
- */
-const API_URL = (typeof process !== 'undefined' && process.env?.API_URL) || 'http://localhost:8000';
-
-/**
  * Storage keys
  */
 const TOKEN_STORAGE_KEY = 'auth_token';
 const USER_STORAGE_KEY = 'auth_user';
+
+/**
+ * Get API URL from site config or fallback to localhost
+ * This is resolved at build time by Docusaurus
+ */
+function getApiUrl(): string {
+  // Try to get from window.DOCUSAURUS_INSTALLED (injected by Docusaurus at build time)
+  if (typeof window !== 'undefined' && (window as any).DOCUSAURUS_INSTALLED) {
+    const siteConfig = (window as any).DOCUSAURUS_INSTALLED?.siteConfig;
+    if (siteConfig?.customFields?.chatApiEndpoint) {
+      return siteConfig.customFields.chatApiEndpoint;
+    }
+  }
+  // Fallback to localhost for development
+  return 'http://localhost:8000';
+}
 
 /**
  * Encrypt data for localStorage
@@ -135,7 +146,7 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_URL}/api/auth/signin`, {
+      const response = await fetch(`${getApiUrl()}/api/auth/signin`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -174,7 +185,7 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_URL}/api/auth/register`, {
+      const response = await fetch(`${getApiUrl()}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

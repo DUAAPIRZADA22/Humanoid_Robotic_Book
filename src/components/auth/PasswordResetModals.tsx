@@ -6,7 +6,21 @@
 import React, { useState, useEffect } from 'react';
 import styles from './AuthModal.module.css';
 
-const API_URL = (typeof process !== 'undefined' && process.env?.API_URL) || 'http://localhost:8000';
+/**
+ * Get API URL from site config or fallback to localhost
+ * This is resolved at build time by Docusaurus
+ */
+function getApiUrl(): string {
+  // Try to get from window.DOCUSAURUS_INSTALLED (injected by Docusaurus at build time)
+  if (typeof window !== 'undefined' && (window as any).DOCUSAURUS_INSTALLED) {
+    const siteConfig = (window as any).DOCUSAURUS_INSTALLED?.siteConfig;
+    if (siteConfig?.customFields?.chatApiEndpoint) {
+      return siteConfig.customFields.chatApiEndpoint;
+    }
+  }
+  // Fallback to localhost for development
+  return 'http://localhost:8000';
+}
 
 /**
  * Props for ResetRequestModal
@@ -41,7 +55,7 @@ export function ResetRequestModal({
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_URL}/api/auth/reset-request`, {
+      const response = await fetch(`${getApiUrl()}/api/auth/reset-request`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
@@ -236,7 +250,7 @@ export function ResetPasswordModal({
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_URL}/api/auth/reset-confirm`, {
+      const response = await fetch(`${getApiUrl()}/api/auth/reset-confirm`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

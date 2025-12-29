@@ -5,9 +5,24 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import styles from './AuthModal.module.css';
 
-const API_URL = (typeof process !== 'undefined' && process.env?.API_URL) || 'http://localhost:8000';
+/**
+ * Get API URL from site config or fallback to localhost
+ * This is resolved at build time by Docusaurus
+ */
+function getApiUrl(): string {
+  // Try to get from window.DOCUSAURUS_INSTALLED (injected by Docusaurus at build time)
+  if (typeof window !== 'undefined' && (window as any).DOCUSAURUS_INSTALLED) {
+    const siteConfig = (window as any).DOCUSAURUS_INSTALLED?.siteConfig;
+    if (siteConfig?.customFields?.chatApiEndpoint) {
+      return siteConfig.customFields.chatApiEndpoint;
+    }
+  }
+  // Fallback to localhost for development
+  return 'http://localhost:8000';
+}
 
 /**
  * Props for ProfileSettings
@@ -64,7 +79,7 @@ export function ProfileSettings({
 
       if (emailChanging) {
         // Verify password via backend
-        const verifyResponse = await fetch(`${API_URL}/api/auth/signin`, {
+        const verifyResponse = await fetch(`${getApiUrl()}/api/auth/signin`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -80,7 +95,7 @@ export function ProfileSettings({
         }
       }
 
-      const response = await fetch(`${API_URL}/api/auth/profile`, {
+      const response = await fetch(`${getApiUrl()}/api/auth/profile`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

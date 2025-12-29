@@ -152,16 +152,16 @@ const config = {
 
   // Custom fields for your site
   customFields: {
-    // Backend API URL - use Railway in production, localhost for development
-    chatApiEndpoint: process.env.CHAT_API_ENDPOINT ||
+    // Backend API URL - use NEXT_PUBLIC_API_URL env var, fallback to Railway/localhost
+    chatApiEndpoint: process.env.NEXT_PUBLIC_API_URL ||
       (process.env.NODE_ENV === 'production'
-        ? 'https://humanoid-robotic-book-backend.up.railway.app'  // Update with your Railway URL
+        ? 'https://humanoidroboticbook-production-ccff.up.railway.app'
         : 'http://localhost:8000'),
-    chatApiKey: process.env.CHAT_API_KEY || '',  // Optional - backend doesn't require API key
+    chatApiKey: process.env.NEXT_PUBLIC_API_KEY || '',  // Optional - backend doesn't require API key
     // Translation service API URL (same as backend)
-    translateApiUrl: process.env.TRANSLATE_API_URL || process.env.CHAT_API_ENDPOINT ||
+    translateApiUrl: process.env.NEXT_PUBLIC_API_URL ||
       (process.env.NODE_ENV === 'production'
-        ? 'https://humanoid-robotic-book-backend.up.railway.app'
+        ? 'https://humanoidroboticbook-production-ccff.up.railway.app'
         : 'http://localhost:8000'),
   },
 };
