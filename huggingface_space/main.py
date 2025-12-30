@@ -35,12 +35,17 @@ logging.getLogger("httpcore.http11").setLevel(logging.WARNING)
 # Auth will be re-enabled once Railway caching is resolved or psycopg2 is installed
 AUTH_AVAILABLE = False
 get_current_user_optional = None
-User = None
 auth_router = None
 init_db = None
 
+# Create stub User type for type hints when auth is disabled
+class User:
+    """Stub User class for type hints when auth is disabled."""
+    id: str = "anonymous"
+    email: str = "anonymous@example.com"
+
 # Create no-op dependency for when auth is disabled
-async def _no_auth_user() -> None:
+async def _no_auth_user() -> User | None:
     return None
 get_current_user_optional = _no_auth_user
 
