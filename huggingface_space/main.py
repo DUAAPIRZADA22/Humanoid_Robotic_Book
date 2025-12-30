@@ -142,7 +142,10 @@ async def lifespan(app: FastAPI):
     qdrant_url = os.getenv("QDRANT_URL")
 
     if not openrouter_api_key:
-        raise ValueError("OPENROUTER_API_KEY environment variable is required")
+        logger.warning("OPENROUTER_API_KEY not set - RAG pipeline and LLM features will be disabled")
+        logger.warning("Set OPENROUTER_API_KEY in Space settings to enable chat features")
+        logger.info("Application started in limited mode - health and docs endpoints available")
+        return  # Exit lifespan early, app starts successfully
 
     # Initialize embedding service using OpenRouter
     embedding_service = OpenRouterEmbeddingService(
