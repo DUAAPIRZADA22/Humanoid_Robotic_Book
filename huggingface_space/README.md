@@ -22,14 +22,49 @@ FastAPI backend for the Physical AI & Humanoid Robotics book chatbot with RAG pi
 
 ## Environment Variables
 
-Set these in the Space settings (Settings → Variables):
+### REQUIRED for Full Chat Functionality
 
-- `OPENROUTER_API_KEY` - Your OpenRouter API key (required)
-- `QDRANT_URL` - Qdrant cloud URL (or use QDRANT_HOST)
-- `QDRANT_API_KEY` - Qdrant API key (if using cloud)
-- `QDRANT_HOST` - Qdrant host (alternative to URL)
-- `QDRANT_PORT` - Qdrant port (default: 6333)
-- `CORS_ORIGINS` - JSON array of allowed CORS origins (e.g., `["https://humanoid-robotic-book-livid.vercel.app"]`)
+Set these in your Space Settings → Variables and secrets:
+
+| Variable | Description | Where to Get |
+|----------|-------------|--------------|
+| `OPENROUTER_API_KEY` | OpenRouter API key for embeddings and LLM | https://openrouter.ai/keys |
+| `QDRANT_URL` | Qdrant cloud URL | Your Qdrant dashboard |
+| `QDRANT_API_KEY` | Qdrant API key | Your Qdrant dashboard |
+| `CORS_ORIGINS` | JSON array of allowed origins | `["https://your-frontend.vercel.app"]` |
+
+### Setup Steps
+
+1. **Get OpenRouter API Key:**
+   - Go to https://openrouter.ai/keys
+   - Sign up/login and create an API key
+   - Copy the key (starts with `sk-or-v1-`)
+
+2. **Get Qdrant Credentials:**
+   - Go to https://cloud.qdrant.io/
+   - Create a free cluster
+   - Copy the API key and URL from your cluster dashboard
+
+3. **Configure Space Variables:**
+   - Open your Space Settings → Variables and secrets
+   - Add each variable from the table above with your actual values
+   - Click "Restart" to apply changes
+
+### Verification
+
+After setting variables, check if they're working:
+- Go to https://huggingface.co/spaces/YOUR_USERNAME/hackathon-book/logs
+- Look for: `INFO - RAG pipeline initialized successfully`
+- NOT: `WARNING - OPENROUTER_API_KEY not set`
+
+### Local Testing
+
+For local development, copy `.env.template` to `.env` and fill in your keys:
+```bash
+cp .env.template .env
+# Edit .env with your actual API keys
+python verify_env.py  # Verify configuration
+```
 
 ## API Endpoints
 
