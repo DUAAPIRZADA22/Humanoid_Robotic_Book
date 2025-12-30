@@ -35,12 +35,17 @@ logging.getLogger("httpcore.http11").setLevel(logging.WARNING)
 # Auth will be re-enabled once Railway caching is resolved or psycopg2 is installed
 AUTH_AVAILABLE = False
 get_current_user_optional = None
-User = None
 auth_router = None
 init_db = None
 
+# Create stub User type for type hints when auth is disabled
+class User:
+    """Stub User class for type hints when auth is disabled."""
+    id: str = "anonymous"
+    email: str = "anonymous@example.com"
+
 # Create no-op dependency for when auth is disabled
-async def _no_auth_user() -> None:
+async def _no_auth_user() -> User | None:
     return None
 get_current_user_optional = _no_auth_user
 
@@ -260,7 +265,18 @@ def parse_cors_list(env_var: str, default: List[str]) -> List[str]:
 # Get CORS configuration from environment
 cors_origins = parse_cors_origins()
 cors_methods = parse_cors_list("CORS_METHODS", ["GET", "POST", "PUT", "DELETE", "OPTIONS"])
-cors_headers = parse_cors_list("CORS_HEADERS", ["Content-Type", "Authorization", "X-API-Key"])
+cors_headers = parse_cors_list(
+    "CORS_HEADERS",
+    [
+        "Content-Type",
+        "Authorization",
+        "X-API-Key",
+        "Accept",  # Required for SSE
+        "Accept-Language",
+        "Accept-Encoding",
+        "Cache-Control",  # Frontend sends this with SSE requests
+    ]
+)
 
 logger.info(f"CORS configured for origins: {cors_origins}")
 
@@ -270,6 +286,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=cors_methods,
     allow_headers=cors_headers,
+    expose_headers=["Content-Type", "Cache-Control", "Connection"],  # SSE headers
 )
 
 
