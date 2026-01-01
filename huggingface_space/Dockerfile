@@ -20,11 +20,11 @@ COPY . .
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    PORT=8000 \
-    HF_ENDPOINT=http://0.0.0.0:8000
+    PORT=7860 \
+    HF_ENDPOINT=http://0.0.0.0:7860
 
-# Expose the port
-EXPOSE 8000
+# Expose the port (HuggingFace default for Docker SDK)
+EXPOSE 7860
 
 # Run the FastAPI application (HuggingFace compatible)
-CMD ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "7860"]

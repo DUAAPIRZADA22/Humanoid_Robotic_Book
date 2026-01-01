@@ -6,7 +6,6 @@ colorTo: purple
 sdk: docker
 pinned: false
 license: mit
-port: 8000
 ---
 
 # Hackathon Book Chatbot Backend

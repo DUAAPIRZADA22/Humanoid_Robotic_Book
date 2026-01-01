@@ -212,8 +212,9 @@ async def lifespan(app: FastAPI):
             logger.info("RAG pipeline initialized successfully")
 
         # HuggingFace compatibility: explicit startup completion message
-        logger.info("=== APPLICATION READY - SERVING ON PORT 8000 ===")
-        print("=== APPLICATION READY - SERVING ON PORT 8000 ===")  # Also print for HF detection
+        port = os.getenv("PORT", "7860")
+        logger.info(f"=== APPLICATION READY - SERVING ON PORT {port} ===")
+        print(f"=== APPLICATION READY - SERVING ON PORT {port} ===")  # Also print for HF detection
 
         yield  # FastAPI takes control - app is now ready to serve requests
 
