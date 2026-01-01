@@ -119,98 +119,105 @@ async def lifespan(app: FastAPI):
     """Initialize and cleanup resources."""
     global chunker, embedding_service, vector_store, retrieval_pipeline, reranker, llm_service
 
-    # Initialize database (only if auth is available)
-    if AUTH_AVAILABLE and init_db:
-        try:
-            logger.info("Initializing auth database...")
-            init_db()
-            logger.info("Auth database initialized")
-        except Exception as e:
-            logger.warning(f"Failed to initialize auth database: {e}")
-            logger.warning("Continuing without authentication")
-    else:
-        logger.info("Auth module not available - running without authentication")
-
-    # Initialize components
-    logger.info("Initializing RAG pipeline components...")
-
-    chunker = MarkdownChunker(min_chunk_size=50, max_chunk_size=1000)
-
-    # Get API keys with proper error handling
-    openrouter_api_key = os.getenv("OPENROUTER_API_KEY")
-    qdrant_api_key = os.getenv("QDRANT_API_KEY")
-    qdrant_url = os.getenv("QDRANT_URL")
-
-    if not openrouter_api_key:
-        raise ValueError("OPENROUTER_API_KEY environment variable is required")
-
-    # Initialize embedding service using OpenRouter
-    embedding_service = OpenRouterEmbeddingService(
-        api_key=openrouter_api_key,
-        model="openai/text-embedding-3-small",
-        base_url=os.getenv("OPENROUTER_BASE_URL")
-    )
-    logger.info("Using OpenRouter for embeddings")
-
-    # Initialize vector store with OpenRouter embedding dimension (1536)
-    if qdrant_url:
-        vector_store = QdrantVectorStore(
-            collection_name="humanoid_robotics_book_openrouter",
-            embedding_dim=1536,  # OpenRouter OpenAI text-embedding-3-small dimension
-            url=qdrant_url,
-            api_key=qdrant_api_key
-        )
-    else:
-        vector_store = QdrantVectorStore(
-            collection_name="humanoid_robotics_book_openrouter",
-            embedding_dim=1536,  # OpenRouter OpenAI text-embedding-3-small dimension
-            host=os.getenv("QDRANT_HOST", "localhost"),
-            port=int(os.getenv("QDRANT_PORT", "6333")),
-            api_key=qdrant_api_key
-        )
-
-    # Initialize OpenRouter reranker
     try:
-        reranker = OpenRouterReranker(
+        # Initialize database (only if auth is available)
+        if AUTH_AVAILABLE and init_db:
+            try:
+                logger.info("Initializing auth database...")
+                init_db()
+                logger.info("Auth database initialized")
+            except Exception as e:
+                logger.warning(f"Failed to initialize auth database: {e}")
+                logger.warning("Continuing without authentication")
+        else:
+            logger.info("Auth module not available - running without authentication")
+
+        # Initialize components
+        logger.info("Initializing RAG pipeline components...")
+
+        chunker = MarkdownChunker(min_chunk_size=50, max_chunk_size=1000)
+
+        # Get API keys with proper error handling
+        openrouter_api_key = os.getenv("OPENROUTER_API_KEY")
+        qdrant_api_key = os.getenv("QDRANT_API_KEY")
+        qdrant_url = os.getenv("QDRANT_URL")
+
+        if not openrouter_api_key:
+            raise ValueError("OPENROUTER_API_KEY environment variable is required")
+
+        # Initialize embedding service using OpenRouter
+        embedding_service = OpenRouterEmbeddingService(
             api_key=openrouter_api_key,
             model="openai/text-embedding-3-small",
-            top_n=5,
-            timeout=60,
             base_url=os.getenv("OPENROUTER_BASE_URL")
         )
-        logger.info("OpenRouter reranker initialized successfully")
-    except Exception as e:
-        logger.warning(f"Failed to initialize OpenRouter reranker: {e}")
-        reranker = None
-    retrieval_pipeline = RetrievalPipeline(
-        embedding_service=embedding_service,
-        vector_store=vector_store,
-        reranker=reranker
-    )
+        logger.info("Using OpenRouter for embeddings")
 
-    # Initialize LLM service using OpenRouter (optimized for fast, short responses)
-    try:
-        llm_service = create_llm_service({
-            "provider": "openrouter",
-            "model": "mistralai/devstral-2512:free",
-            "api_key": openrouter_api_key,
-            "base_url": os.getenv("OPENROUTER_BASE_URL"),
-            "max_tokens": 300,  # Short responses for speed
-            "temperature": 0.7
-        })
-        logger.info("LLM service initialized successfully with OpenRouter (Fast Mode)")
-    except Exception as e:
-        logger.warning(f"Failed to initialize LLM service: {e}")
-        logger.warning("Chat will return retrieved chunks without generated answers")
-        llm_service = None
+        # Initialize vector store with OpenRouter embedding dimension (1536)
+        if qdrant_url:
+            vector_store = QdrantVectorStore(
+                collection_name="humanoid_robotics_book_openrouter",
+                embedding_dim=1536,  # OpenRouter OpenAI text-embedding-3-small dimension
+                url=qdrant_url,
+                api_key=qdrant_api_key
+            )
+        else:
+            vector_store = QdrantVectorStore(
+                collection_name="humanoid_robotics_book_openrouter",
+                embedding_dim=1536,  # OpenRouter OpenAI text-embedding-3-small dimension
+                host=os.getenv("QDRANT_HOST", "localhost"),
+                port=int(os.getenv("QDRANT_PORT", "6333")),
+                api_key=qdrant_api_key
+            )
 
-    # Ensure collection exists
-    await vector_store.ensure_collection()
-    logger.info("RAG pipeline initialized successfully")
+        # Initialize OpenRouter reranker
+        try:
+            reranker = OpenRouterReranker(
+                api_key=openrouter_api_key,
+                model="openai/text-embedding-3-small",
+                top_n=5,
+                timeout=60,
+                base_url=os.getenv("OPENROUTER_BASE_URL")
+            )
+            logger.info("OpenRouter reranker initialized successfully")
+        except Exception as e:
+            logger.warning(f"Failed to initialize OpenRouter reranker: {e}")
+            reranker = None
+        retrieval_pipeline = RetrievalPipeline(
+            embedding_service=embedding_service,
+            vector_store=vector_store,
+            reranker=reranker
+        )
 
-    yield
+        # Initialize LLM service using OpenRouter (optimized for fast, short responses)
+        try:
+            llm_service = create_llm_service({
+                "provider": "openrouter",
+                "model": "mistralai/devstral-2512:free",
+                "api_key": openrouter_api_key,
+                "base_url": os.getenv("OPENROUTER_BASE_URL"),
+                "max_tokens": 300,  # Short responses for speed
+                "temperature": 0.7
+            })
+            logger.info("LLM service initialized successfully with OpenRouter (Fast Mode)")
+        except Exception as e:
+            logger.warning(f"Failed to initialize LLM service: {e}")
+            logger.warning("Chat will return retrieved chunks without generated answers")
+            llm_service = None
 
-    logger.info("Shutting down RAG pipeline...")
+        # Ensure collection exists
+        await vector_store.ensure_collection()
+        logger.info("RAG pipeline initialized successfully")
+
+        yield
+
+    except asyncio.CancelledError:
+        # Python 3.10+ compatibility: properly handle task cancellation
+        logger.info("Lifespan cancelled during startup/shutdown")
+        raise
+    finally:
+        # Cleanup - always runs, even if CancelledError is raised
+        logger.info("Shutting down RAG pipeline...")
 
 
 # Create FastAPI app
