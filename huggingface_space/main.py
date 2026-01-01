@@ -211,6 +211,10 @@ async def lifespan(app: FastAPI):
             await vector_store.ensure_collection()
             logger.info("RAG pipeline initialized successfully")
 
+        # HuggingFace compatibility: explicit startup completion message
+        logger.info("=== APPLICATION READY - SERVING ON PORT 8000 ===")
+        print("=== APPLICATION READY - SERVING ON PORT 8000 ===")  # Also print for HF detection
+
         yield  # FastAPI takes control - app is now ready to serve requests
 
     except asyncio.CancelledError:
@@ -551,7 +555,7 @@ async def translate_page(request: TranslateRequest) -> TranslateResponse:
 
 @app.get("/health")
 async def health_check() -> Dict[str, Any]:
-    """Health check endpoint."""
+    """Health check endpoint - HuggingFace compatible."""
     health_status = {
         "status": "healthy",
         "components": {
@@ -575,6 +579,8 @@ async def health_check() -> Dict[str, Any]:
                 "error": str(e)
             }
 
+    # Log health check for debugging (HF visibility)
+    logger.info(f"Health check called - status: {health_status['status']}")
     return health_status
 
 
