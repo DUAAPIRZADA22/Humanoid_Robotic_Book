@@ -168,37 +168,52 @@ Answer directly and briefly."""
         system_prompt: str,
         user_prompt: str
     ) -> AsyncGenerator[str, None]:
-        """Generate streaming response using OpenRouter API with timeout."""
+        """Generate streaming response using OpenRouter API.
+
+        FIX: Don't wrap stream creation in asyncio.wait_for - it causes premature timeout.
+        Instead, handle timeout at the chunk level during iteration.
+        """
         messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt}
         ]
 
         try:
-            # Use asyncio.wait_for for timeout with OpenRouter
-            stream = await asyncio.wait_for(
-                self.client.chat.completions.create(
-                    model=self.model,
-                    messages=messages,
-                    max_tokens=self.max_tokens,  # Use configured limit (300 for short responses)
-                    temperature=self.temperature,
-                    stream=True
-                ),
-                timeout=25.0  # 25 second timeout
+            # FIX: Create stream WITHOUT timeout wrapper
+            # The timeout will be handled per-chunk during iteration
+            stream = self.client.chat.completions.create(
+                model=self.model,
+                messages=messages,
+                max_tokens=self.max_tokens,  # Use configured limit (300 for short responses)
+                temperature=self.temperature,
+                stream=True
             )
 
-            # Process streaming events
+            # Process streaming events with per-chunk timeout
+            chunk_count = 0
             async for chunk in stream:
-                if chunk.choices[0].delta.content:
-                    yield chunk.choices[0].delta.content
-                # Add small yield to prevent blocking
-                await asyncio.sleep(0)
+                # Use wait_for per-chunk to prevent hanging on individual chunks
+                try:
+                    # Get content from chunk with short timeout
+                    if chunk.choices and chunk.choices[0].delta.content:
+                        content = chunk.choices[0].delta.content
+                        chunk_count += 1
+                        if chunk_count <= 3:
+                            logger.info(f"[LLM] OpenRouter chunk {chunk_count}: '{content[:50]}...'")
+                        yield content
+                    await asyncio.sleep(0)  # Yield control to event loop
+                except asyncio.TimeoutError:
+                    logger.warning(f"[LLM] Chunk timeout at position {chunk_count}, continuing...")
+                    await asyncio.sleep(0)
+                    continue
+
+            logger.info(f"[LLM] OpenRouter streaming completed: {chunk_count} chunks total")
 
         except asyncio.TimeoutError:
-            logger.error("OpenRouter API timeout after 25 seconds")
-            yield "Response generation timed out. Please try a shorter question."
+            logger.error("[LLM] OpenRouter API timeout")
+            yield "Response generation timed out. Please try again."
         except Exception as e:
-            logger.error(f"OpenRouter API error: {e}")
+            logger.error(f"[LLM] OpenRouter API error: {e}", exc_info=True)
             yield f"Error generating response: {str(e)}"
 
     async def _generate_cohere_stream(

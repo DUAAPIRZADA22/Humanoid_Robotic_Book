@@ -392,7 +392,12 @@ async def chat_stream(
 ) -> StreamingResponse:
     """
     Stream chat responses using Server-Sent Events (SSE).
-    FIX: Start LLM streaming immediately without waiting for RAG retrieval.
+
+    FIX: Improved SSE streaming with:
+    - Proper event flushing using double newline
+    - Better error handling and logging
+    - Immediate sending without buffering
+    - Per-chunk logging for debugging
     """
     # Log authenticated user (optional - works without auth)
     if current_user:
@@ -406,7 +411,7 @@ async def chat_stream(
     async def generate_response() -> AsyncGenerator[str, None]:
         """Generate streaming response - start immediately, do RAG in background."""
         try:
-            # Send initial metadata IMMEDIATELY
+            # Send initial metadata IMMEDIATELY with flush
             metadata = {
                 "type": "metadata",
                 "query": request.question,
@@ -414,8 +419,9 @@ async def chat_stream(
                 "similarity_threshold": request.similarity_threshold,
                 "use_rerank": request.use_rerank
             }
+            logger.info(f"[CHAT] Sending metadata: query='{request.question[:50]}...'")
             yield f"data: {json.dumps(metadata)}\n\n"
-            await asyncio.sleep(0)
+            await asyncio.sleep(0)  # Force flush
 
             # Start retrieval in background (non-blocking)
             retrieval_task = asyncio.create_task(
@@ -430,9 +436,11 @@ async def chat_stream(
             if llm_service:
                 logger.info("[CHAT] Starting LLM generation immediately (no context)...")
                 yield f"data: {json.dumps({'type': 'answer_start'})}\n\n"
+                await asyncio.sleep(0)  # Force flush
 
                 answer_content = ""
                 chunk_count = 0
+                error_occurred = False
 
                 try:
                     # Generate answer without waiting for retrieval
@@ -441,6 +449,20 @@ async def chat_stream(
                         context=[],  # Empty context for immediate response
                         stream=True
                     ):
+                        # Check for error chunks
+                        if chunk and chunk.startswith("Error"):
+                            logger.error(f"[CHAT] LLM error chunk: {chunk}")
+                            error_occurred = True
+                            # Send error to client
+                            error_data = {
+                                "type": "error",
+                                "message": chunk
+                            }
+                            yield f"data: {json.dumps(error_data)}\n\n"
+                            await asyncio.sleep(0)
+                            break
+
+                        # Process normal content chunks
                         if chunk and not chunk.startswith("Error"):
                             answer_content += chunk
                             chunk_count += 1
@@ -449,25 +471,38 @@ async def chat_stream(
                                 "content": chunk
                             }
                             yield f"data: {json.dumps(chunk_data)}\n\n"
-                            if chunk_count <= 3:
-                                logger.debug(f"[CHAT] LLM chunk {chunk_count}: '{chunk[:50]}...'")
-                        elif chunk and chunk.startswith("Error"):
-                            logger.error(f"[CHAT] LLM error: {chunk}")
-                            break
+                            await asyncio.sleep(0)  # Force flush after each chunk
 
-                    logger.info(f"[CHAT] LLM completed: {chunk_count} chunks, {len(answer_content)} chars")
+                            # Log first few chunks for debugging
+                            if chunk_count <= 3:
+                                logger.info(f"[CHAT] LLM chunk {chunk_count}: '{chunk[:50]}...'")
+
+                    if error_occurred:
+                        logger.warning(f"[CHAT] LLM generation had errors after {chunk_count} chunks")
+                    else:
+                        logger.info(f"[CHAT] LLM completed successfully: {chunk_count} chunks, {len(answer_content)} chars")
 
                 except Exception as e:
-                    logger.error(f"[CHAT] LLM generation failed: {str(e)}")
+                    logger.error(f"[CHAT] LLM generation exception: {str(e)}", exc_info=True)
+                    # Send error to client
+                    error_data = {
+                        "type": "error",
+                        "message": f"Generation failed: {str(e)}"
+                    }
+                    yield f"data: {json.dumps(error_data)}\n\n"
+                    await asyncio.sleep(0)
 
-                # Send completion
+                # Send completion event
                 completion = {
                     "type": "complete",
-                    "has_answer": True,
+                    "has_answer": len(answer_content) > 0,
                     "answer_length": len(answer_content),
+                    "chunk_count": chunk_count,
                     "message": "Response complete"
                 }
+                logger.info(f"[CHAT] Sending complete: chunks={chunk_count}, length={len(answer_content)}")
                 yield f"data: {json.dumps(completion)}\n\n"
+                await asyncio.sleep(0)  # Force flush
 
                 # Wait for retrieval in background (fire and forget)
                 try:
@@ -475,21 +510,27 @@ async def chat_stream(
                     logger.info(f"[CHAT] Background retrieval completed: {len(results)} results")
                 except asyncio.TimeoutError:
                     logger.warning("[CHAT] Background retrieval timed out (response already sent)")
+                except Exception as e:
+                    logger.warning(f"[CHAT] Background retrieval error: {e}")
 
             else:
                 # No LLM service - send error
+                logger.error("[CHAT] LLM service not available")
                 error_data = {
                     "type": "error",
                     "message": "LLM service not available"
                 }
                 yield f"data: {json.dumps(error_data)}\n\n"
+                await asyncio.sleep(0)
 
         except Exception as e:
+            logger.error(f"[CHAT] Stream generation error: {str(e)}", exc_info=True)
             error_data = {
                 "type": "error",
-                "message": str(e)
+                "message": f"Stream error: {str(e)}"
             }
             yield f"data: {json.dumps(error_data)}\n\n"
+            await asyncio.sleep(0)
 
     return StreamingResponse(
         generate_response(),
@@ -497,7 +538,8 @@ async def chat_stream(
         headers={
             "Cache-Control": "no-cache, no-store, must-revalidate",
             "Connection": "keep-alive",
-            "X-Accel-Buffering": "no",
+            "X-Accel-Buffering": "no",  # Disable nginx buffering
+            "X-Content-Type-Options": "nosniff",  # Prevent MIME sniffing
         }
     )
 
