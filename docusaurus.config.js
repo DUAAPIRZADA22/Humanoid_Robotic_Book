@@ -84,6 +84,7 @@ const config = {
             position: 'right',
           },
         ],
+        hideOnScroll: false,
       },
       footer: {
         style: 'dark',
@@ -143,7 +144,7 @@ const config = {
       },
       // Default theme configuration
       colorMode: {
-        defaultMode: 'dark',
+        defaultMode: 'light',
         disableSwitch: false,
         respectPrefersColorScheme: false,
       },
@@ -151,8 +152,17 @@ const config = {
 
   // Custom fields for your site
   customFields: {
-    chatApiEndpoint: process.env.CHAT_API_ENDPOINT || (process.env.NODE_ENV === 'production' ? null : 'http://localhost:7860/api/v1'),
-    chatApiKey: process.env.CHAT_API_KEY || (process.env.NODE_ENV === 'production' ? null : 'your-api-key'),
+    // Backend API URL - use NEXT_PUBLIC_API_URL env var, fallback to Railway/localhost
+    chatApiEndpoint: process.env.NEXT_PUBLIC_API_URL ||
+      (process.env.NODE_ENV === 'production'
+        ? 'https://humanoidroboticbook-production-ccff.up.railway.app'
+        : 'http://localhost:8000'),
+    chatApiKey: process.env.NEXT_PUBLIC_API_KEY || '',  // Optional - backend doesn't require API key
+    // Translation service API URL (same as backend)
+    translateApiUrl: process.env.NEXT_PUBLIC_API_URL ||
+      (process.env.NODE_ENV === 'production'
+        ? 'https://humanoidroboticbook-production-ccff.up.railway.app'
+        : 'http://localhost:8000'),
   },
 };
 

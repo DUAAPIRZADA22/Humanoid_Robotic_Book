@@ -1,0 +1,43 @@
+{
+    "name": "Manipulation Suite",
+    "description": "High-precision sensors for object manipulation and hand-eye coordination.",
+    "sensors": [
+        {
+            "name": "wrist_camera_left",
+            "type": "camera",
+            "parent": "left_wrist_link",
+            "position": [0.05, 0.0, 0.05],
+            "orientation": [0.7071, 0.0, 0.7071, 0.0],
+            "config": {
+                "resolution": [848, 480],
+                "type": "rgb",
+                "fov": 60.0,
+                "focus_distance": 0.3
+            }
+        },
+        {
+            "name": "wrist_camera_right",
+            "type": "camera",
+            "parent": "right_wrist_link",
+            "position": [0.05, 0.0, 0.05],
+            "orientation": [0.7071, 0.0, 0.7071, 0.0],
+            "config": {
+                "resolution": [848, 480],
+                "type": "rgb",
+                "fov": 60.0,
+                "focus_distance": 0.3
+            }
+        },
+        {
+            "name": "head_stereo_camera",
+            "type": "camera",
+            "parent": "head_link",
+            "position": [0.0, 0.0, 0.0],
+            "config": {
+                "resolution": [1920, 1080],
+                "type": "stereo",
+                "baseline": 0.12
+            }
+        }
+    ]
+}

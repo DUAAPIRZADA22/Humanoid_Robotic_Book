@@ -9,6 +9,7 @@ import { useChatStream } from './hooks/useChatStream';
 import { useTextSelection } from './hooks/useTextSelection';
 import { ChatInterface } from './components/ChatInterface';
 import SelectionPopover from './components/SelectionPopover';
+import { useAuth } from '../../contexts/AuthContext';
 import styles from './styles/ChatWidget.module.css';
 
 /**
@@ -36,12 +37,28 @@ function ChatWidgetInner({
 }: ChatWidgetProps): JSX.Element {
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const { isStreaming } = useChatStream();
+  const { user } = useAuth();
   const { selection, showPopover } = useTextSelection();
+
+  /**
+   * Clear chat history when opening the chat widget
+   */
+  useEffect(() => {
+    if (isOpen && typeof window !== 'undefined') {
+      // Clear previous chat history when opening
+      window.dispatchEvent(new CustomEvent('chat:clear-messages-context'));
+    }
+  }, [isOpen]);
 
   /**
    * Handle custom events
    */
   useEffect(() => {
+    // Only run on client side
+    if (typeof window === 'undefined') {
+      return;
+    }
+
     // Handle clear messages event
     const handleClearMessages = () => {
       window.dispatchEvent(new CustomEvent('chat:clear-messages-context'));
@@ -61,25 +78,30 @@ function ChatWidgetInner({
     const handleAskSelection = (event: CustomEvent) => {
       const { text, selectedText } = event.detail;
       window.dispatchEvent(
-        new CustomEvent('chat:send-message-context', {
-          detail: {
-            content: `What does this mean? ${text}`,
-            metadata: { selectedText },
-          },
+        new CustomEvent('chat:ask-selection', {
+          detail: { text, selectedText: text },
         })
       );
+    };
+
+    // Handle auth required event
+    const handleAuthRequired = () => {
+      // Dispatch event for navbar to handle
+      window.dispatchEvent(new CustomEvent('auth:required'));
     };
 
     window.addEventListener('chat:clear-messages', handleClearMessages);
     window.addEventListener('chat:retry-message', handleRetryMessage);
     window.addEventListener('chat:dismiss-error', handleDismissError);
     window.addEventListener('chat:ask-selection', handleAskSelection);
+    window.addEventListener('auth:required', handleAuthRequired);
 
     return () => {
       window.removeEventListener('chat:clear-messages', handleClearMessages);
       window.removeEventListener('chat:retry-message', handleRetryMessage);
       window.removeEventListener('chat:dismiss-error', handleDismissError);
       window.removeEventListener('chat:ask-selection', handleAskSelection);
+      window.removeEventListener('auth:required', handleAuthRequired);
     };
   }, []);
 
@@ -125,7 +147,13 @@ function ChatWidgetInner({
       {/* Chat Interface */}
       <ChatInterface
         isOpen={isOpen}
-        onToggle={() => setIsOpen(!isOpen)}
+        onToggle={() => {
+          if (!user) {
+            window.dispatchEvent(new CustomEvent('auth:required'));
+          } else {
+            setIsOpen(!isOpen);
+          }
+        }}
       />
 
       {/* Text Selection Popover */}

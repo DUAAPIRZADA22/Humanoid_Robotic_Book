@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frontend Connection Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .chat-box { border: 1px solid #ccc; padding: 10px; height: 400px; overflow-y: auto; margin-bottom: 10px; }
+        .input-box { display: flex; gap: 10px; }
+        input { flex: 1; padding: 10px; }
+        button { padding: 10px 20px; background: #007acc; color: white; border: none; cursor: pointer; }
+        .message { margin: 5px 0; padding: 8px; border-radius: 5px; }
+        .user { background: #e3f2fd; text-align: right; }
+        .bot { background: #f3e5f5; }
+        .source { font-size: 0.9em; color: #666; font-style: italic; }
+        .answer { margin-top: 10px; padding: 10px; background: #fff3cd; border-left: 4px solid #ffeaa7; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Frontend-Backend Connection Test</h1>
+        <div class="chat-box" id="chatBox"></div>
+        <div class="input-box">
+            <input type="text" id="messageInput" placeholder="Ask about humanoid robotics..." />
+            <button onclick="sendMessage()">Send</button>
+        </div>
+        <div id="status"></div>
+    </div>
+
+    <script>
+        const API_ENDPOINT = 'http://localhost:8000/chat';
+        const chatBox = document.getElementById('chatBox');
+        const messageInput = document.getElementById('messageInput');
+        const statusDiv = document.getElementById('status');
+
+        async function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message) return;
+
+            // Add user message
+            addMessage(message, 'user');
+            messageInput.value = '';
+            statusDiv.textContent = 'Sending message...';
+            statusDiv.style.color = '#007acc';
+
+            try {
+                const response = await fetch(API_ENDPOINT, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'text/event-stream',
+                    },
+                    body: JSON.stringify({
+                        question: message,
+                        top_k: 3,
+                        similarity_threshold: 0.2,
+                        use_rerank: true,
+                        stream: false
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop() || '';
+
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const data = JSON.parse(line.slice(6));
+                                handleChunk(data);
+                            } catch (e) {
+                                console.error('Failed to parse chunk:', e);
+                            }
+                        }
+                    }
+                }
+
+                statusDiv.textContent = 'Response complete';
+                statusDiv.style.color = 'green';
+
+            } catch (error) {
+                console.error('Error:', error);
+                statusDiv.textContent = `Error: ${error.message}`;
+                statusDiv.style.color = 'red';
+                addMessage(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        function handleChunk(chunk) {
+            console.log('Received chunk:', chunk);
+
+            switch (chunk.type) {
+                case 'metadata':
+                    statusDiv.textContent = 'Processing query...';
+                    break;
+
+                case 'source':
+                    addSource(chunk);
+                    break;
+
+                case 'answer_chunk':
+                    // Collect answer chunks
+                    if (!window.currentAnswer) {
+                        window.currentAnswer = '';
+                    }
+                    window.currentAnswer += chunk.content;
+                    updateAnswer();
+                    break;
+
+                case 'answer_start':
+                    window.currentAnswer = '';
+                    addMessage('', 'answer-start');
+                    break;
+
+                case 'complete':
+                    if (!window.currentAnswer) {
+                        addMessage('No answer generated', 'bot');
+                    }
+                    window.currentAnswer = '';
+                    statusDiv.textContent = 'Complete';
+                    break;
+
+                case 'error':
+                    addMessage(`Error: ${chunk.message}`, 'error');
+                    statusDiv.textContent = `Error: ${chunk.message}`;
+                    statusDiv.style.color = 'red';
+                    break;
+            }
+        }
+
+        function addMessage(text, className) {
+            const div = document.createElement('div');
+            div.className = `message ${className}`;
+            div.textContent = text;
+            chatBox.appendChild(div);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function addSource(source) {
+            const div = document.createElement('div');
+            div.className = 'source';
+            div.innerHTML = `<strong>Source:</strong> ${source.source || 'Unknown'} (Score: ${((source.score || 0) * 100).toFixed(1)}%)<br>${source.content}`;
+            chatBox.appendChild(div);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function updateAnswer() {
+            const existingAnswer = document.querySelector('.answer');
+            if (existingAnswer) {
+                existingAnswer.textContent = window.currentAnswer;
+            } else if (window.currentAnswer) {
+                addMessage(window.currentAnswer, 'answer');
+            }
+        }
+
+        // Test connection on load
+        window.onload = async () => {
+            try {
+                const response = await fetch('http://localhost:8000/health');
+                const health = await response.json();
+                statusDiv.textContent = `Backend healthy: ${health.status}`;
+                statusDiv.style.color = 'green';
+            } catch (error) {
+                statusDiv.textContent = `Backend connection failed: ${error.message}`;
+                statusDiv.style.color = 'red';
+            }
+        };
+
+        // Allow Enter key to send
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>

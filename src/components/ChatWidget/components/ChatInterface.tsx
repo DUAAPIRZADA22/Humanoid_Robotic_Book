@@ -68,7 +68,9 @@ export function ChatInterface({ isOpen, onToggle, className }: ChatInterfaceProp
               className={`${styles.retryButton} glass-button`}
               onClick={() => {
                 // Trigger retry through context
-                window.dispatchEvent(new CustomEvent('chat:retry-message'));
+                if (typeof window !== 'undefined') {
+                  window.dispatchEvent(new CustomEvent('chat:retry-message'));
+                }
               }}
             >
               Retry
@@ -78,7 +80,9 @@ export function ChatInterface({ isOpen, onToggle, className }: ChatInterfaceProp
             className={`${styles.dismissButton} glass-button`}
             onClick={() => {
               // Dismiss error through context
-              window.dispatchEvent(new CustomEvent('chat:dismiss-error'));
+              if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('chat:dismiss-error'));
+              }
             }}
           >
             Dismiss
@@ -123,7 +127,9 @@ export function ChatInterface({ isOpen, onToggle, className }: ChatInterfaceProp
             <button
               className={`${styles.headerButton} glass-button`}
               onClick={() => {
-                window.dispatchEvent(new CustomEvent('chat:clear-messages'));
+                if (typeof window !== 'undefined') {
+                  window.dispatchEvent(new CustomEvent('chat:clear-messages'));
+                }
               }}
               title="Clear conversation"
             >

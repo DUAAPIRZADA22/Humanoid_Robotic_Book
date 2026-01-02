@@ -50,13 +50,16 @@ export function ChatProvider({ children, initialState }: ChatProviderProps): JSX
   // Load saved state from storage
   const savedState = loadFromStorage();
 
-  // Initialize state with saved data or defaults
+  // Initialize state with fresh data (no persistence for privacy)
   const [state, dispatch] = useReducer(chatReducer, {
     ...initialChatState,
     ...initialState,
-    // Restore saved messages and settings if available
-    messages: savedState?.messages || initialState?.messages || initialChatState.messages,
-    settings: savedState?.settings || initialState?.settings || initialChatState.settings,
+    // Start with empty messages for privacy
+    messages: [],
+    settings: {
+      ...initialChatState.settings,
+      autoSave: false, // Disable auto-save for privacy
+    },
   });
 
   // Auto-save to localStorage when messages or settings change
@@ -66,6 +69,7 @@ export function ChatProvider({ children, initialState }: ChatProviderProps): JSX
     }
   }, [state.messages, state.settings]);
 
+  
   /**
    * Send a message to the chat
    */
@@ -141,6 +145,38 @@ export function ChatProvider({ children, initialState }: ChatProviderProps): JSX
   const dismissError = (): void => {
     dispatch(chatActions.setError(null));
   };
+
+  // Handle custom events
+  React.useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    // Handle clear messages event
+    const handleClearMessages = () => {
+      clearMessages();
+    };
+
+    // Handle retry message event
+    const handleRetryMessage = () => {
+      retryLastMessage();
+    };
+
+    // Handle dismiss error event
+    const handleDismissError = () => {
+      dismissError();
+    };
+
+    window.addEventListener('chat:clear-messages-context', handleClearMessages);
+    window.addEventListener('chat:retry-message-context', handleRetryMessage);
+    window.addEventListener('chat:dismiss-error-context', handleDismissError);
+
+    return () => {
+      window.removeEventListener('chat:clear-messages-context', handleClearMessages);
+      window.removeEventListener('chat:retry-message-context', handleRetryMessage);
+      window.removeEventListener('chat:dismiss-error-context', handleDismissError);
+    };
+  }, [clearMessages, retryLastMessage, dismissError]);
 
   const contextValue: ChatContextValue = {
     state,

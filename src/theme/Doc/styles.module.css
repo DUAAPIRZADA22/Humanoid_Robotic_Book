@@ -1,0 +1,31 @@
+/**
+ * Doc wrapper styles
+ */
+
+.docPageWrapper {
+  position: relative;
+}
+
+.translateButtonContainer {
+  position: fixed;
+  top: 5rem;
+  right: 2rem;
+  z-index: 100;
+  /* Ensure button is always visible */
+  display: flex !important;
+}
+
+/* Mobile responsive */
+@media (max-width: 996px) {
+  .translateButtonContainer {
+    top: 4rem;
+    right: 1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .translateButtonContainer {
+    top: 3.5rem;
+    right: 0.5rem;
+  }
+}

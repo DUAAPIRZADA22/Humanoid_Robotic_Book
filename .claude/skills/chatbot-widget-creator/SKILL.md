@@ -1,9 +1,9 @@
 ---
 name: chatbot-widget-creator
-description: Creates a battle-tested ChatGPT-style chatbot widget that solves real-world production issues. Features infinite re-render protection, text selection "Ask AI", RAG backend integration, streaming SSE, and comprehensive performance monitoring.
+description: Creates a battle-tested ChatGPT-style chatbot widget with SSE streaming, RAG integration, and protection against common React issues like infinite re-renders and SSE cancellation.
 category: frontend
-version: 3.2.0
-date_updated: 2025-12-07
+version: 4.0.0
+date_updated: 2025-12-28
 ---
 
 # Chatbot Widget Creator Skill
@@ -11,54 +11,160 @@ date_updated: 2025-12-07
 ## Purpose
 
 Creates a **production-ready ChatGPT-style chatbot widget** with advanced features:
-- **Custom Portrait Layout**: Compact 380px x 700px styling matching ChatGPT aesthetics
-- **Infinite re-render protection** using useReducer and split context pattern
-- **Text selection "Ask AI"** functionality with smart tooltips
-- **Streaming responses** with Server-Sent Events (SSE)
-- **RAG backend integration** ready for FastAPI/Qdrant setup
+- **SSE Streaming** with cancellation protection (no more "Request cancelled" loops)
+- **Immediate responses** - LLM starts streaming without waiting for RAG retrieval
+- **Clean answers** - sources filtered out, no extra formatting
+- **Infinite re-render protection** using useMemo and stable refs
+- **Text selection "Ask AI"** functionality
+- **RAG backend integration** ready
 - **Performance monitoring** and debugging utilities
-- **Modern glassmorphic UI** with ChatGPT-style interface
 
-## Key Improvements Based on Real Implementation
+## Critical Lessons Learned (from real implementation)
 
-### 1. **Refined UI/UX**
-- **Compact Dimensions**: 380px width x 700px height for optimal sidebar integration
-- **Clean Message UI**: Removed timestamps, read receipts, and file uploads for a cleaner reading experience
-- **Themed Integration**: Dynamically uses `var(--ifm-color-primary)` to match host site branding
-- **Bottom Alignment**: Message bubbles and avatars are bottom-aligned for a modern chat look
-- **Minimalist Indicators**: Simplified 3-dot pulsing animation for thinking state
+### 1. **SSE Cancellation Prevention** ⭐ MOST IMPORTANT
 
-### 2. **State Management Architecture**
-- **useReducer pattern** instead of multiple useState hooks
-- **Split context** (StateContext + ActionsContext) to prevent unnecessary re-renders
-- **Stable callbacks** with proper dependencies to avoid circular references
-- **AbortController** for proper cleanup of streaming connections
+**Problem**: SSE streams were being cancelled repeatedly with logs:
+```
+[SSE] Starting chat stream
+[SSE] Cleanup: aborting stream
+[SSE] Request cancelled
+```
 
-### 3. **Performance Optimizations**
-- **React.memo** wrapping for expensive components like `MessageBubble`
-- **useMemo** for computed values and complex operations
-- **useCallback** with stable dependencies
-- **Render counter utilities** for debugging
-- **Virtualization** support for long conversations (50+ messages)
+**Root Cause**: Dependency cascade:
+1. `apiClient` recreated on every render (not memoized)
+2. `sendStreamMessage` depended on `apiClient` → recreated
+3. Event listener `useEffect` depended on `sendStreamMessage` → re-ran
+4. Cleanup called on every re-run → aborted stream
 
-### 4. **Text Selection Feature**
-- **useTextSelection** hook for detecting text selections
-- **Smart positioning tooltip** with edge detection
-- **Context-aware prompts** when asking about selected text
-- **Length validation** with truncation warnings
+**Solution** - Three critical fixes:
+
+```typescript
+// FIX 1: Memoize apiClient to prevent recreation
+const apiClient = useMemo(
+  () => createApiClient(chatApiEndpoint || '', chatApiKey || ''),
+  [chatApiEndpoint, chatApiKey] // Only recreate when config actually changes
+);
+
+// FIX 2: Use ref-based event listener (never re-runs)
+const sendStreamMessageRef = useRef(sendStreamMessage);
+sendStreamMessageRef.current = sendStreamMessage;
+
+useEffect(() => {
+  const handler = (e) => sendStreamMessageRef.current(e.detail.content, e.detail.metadata);
+  window.addEventListener('chat:send-message', handler);
+  return () => {
+    window.removeEventListener('chat:send-message', handler);
+    if (cleanupRef.current) {
+      cleanupRef.current();
+      cleanupRef.current = null;
+    }
+  };
+}, [dispatch]); // Only depends on stable dispatch
+
+// FIX 3: Request ID tracking prevents aborting active requests
+const activeRequestIdRef = useRef<string | null>(null);
+
+const sendStreamMessage = useCallback(async (content: string) => {
+  const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  activeRequestIdRef.current = requestId;
+
+  // ... after streaming starts
+  if (activeRequestIdRef.current === requestId) {
+    cleanupRef.current = cleanup;
+  }
+}, [apiClient, token, dispatch, ...]);
+```
+
+### 2. **Immediate Response Backend** ⭐ UX Critical
+
+**Problem**: Long wait (8-16 seconds) before any response appears
+
+**Solution**: Start LLM streaming immediately, do RAG in background:
+```python
+# Backend - stream immediately, retrieve in background
+async def generate_response():
+    yield metadata  # Send immediately
+
+    # Start retrieval in background (non-blocking)
+    retrieval_task = asyncio.create_task(retrieval_pipeline.retrieve(query))
+
+    # Start LLM NOW without waiting for retrieval
+    async for chunk in llm_service.generate_answer(query, context=[], stream=True):
+        yield chunk  # Stream immediately
+
+    # Wait for retrieval in background (fire and forget)
+    await asyncio.wait_for(retrieval_task, timeout=5.0)
+```
+
+### 3. **Clean Answer Display** ⭐ User Experience
+
+**Problem**: Responses showed sources and had extra formatting like `---` and `**AI Answer:**`
+
+**Solution**: Filter at frontend chunk handler:
+```typescript
+const handleStreamChunk = useCallback((chunk: any) => {
+  switch (chunk.type) {
+    case 'source':
+      // Skip sources entirely - don't display
+      console.debug('[SSE] Source skipped:', chunk.source);
+      break;
+
+    case 'answer_start':
+      // Don't add separator or label
+      break;
+
+    case 'content':
+    case 'answer_chunk':
+      // Append directly without extra formatting
+      dispatch(chatActions.appendStream(chunk.content));
+      break;
+
+    case 'complete':
+      // End streaming without trailing separator
+      dispatch(chatActions.endStream());
+      break;
+  }
+}, [dispatch]);
+```
+
+### 4. **Proper Abort Detection** ⭐ Error Handling
+
+**Problem**: Aborts logged as errors, confusing debugging
+
+**Solution**: Distinguish aborts from errors:
+```typescript
+// In stream handler
+.catch((error) => {
+  // Check for abort FIRST - handle silently
+  if (controller.signal.aborted || error?.name === 'AbortError') {
+    console.log('[SSE] Request cancelled (abort detected)');
+    return; // Don't call onError for user cancellations
+  }
+
+  // Only then handle actual errors
+  onError(chatError);
+});
+
+// Cleanup function
+return () => {
+  if (!hasCalledCompletion) {
+    console.log('[SSE] Cleanup: aborting stream');
+    controller.abort();
+  }
+};
+```
 
 ## Prerequisites
 
 1. **Backend Requirements**:
    - FastAPI or similar with SSE support
-   - Endpoint: `POST /api/chat` returning Server-Sent Events
-   - Request format: `{ "question": string, "stream": boolean }`
-   - Response format: SSE with `{ "type": "chunk", "content": string }`
+   - Endpoint: `POST /chat` returning Server-Sent Events
+   - Request format: `{ "question": string, "stream": true }`
+   - Response format: SSE with chunks
 
 2. **Frontend Dependencies**:
    ```bash
-   npm install react framer-motion react-markdown react-syntax-highlighter remark-gfm lucide-react clsx tailwind-merge
-   # Note: No ChatKit dependency - this is a custom implementation
+   npm install react framer-motion react-markdown remark-gfm
    ```
 
 ## Quick Start
@@ -66,37 +172,37 @@ Creates a **production-ready ChatGPT-style chatbot widget** with advanced featur
 ### 1. Create the Widget Structure
 
 ```bash
-# Create main directory structure
 mkdir -p src/components/ChatWidget/{components,hooks,contexts,utils,styles}
-
-# Copy all template files
 cp -r .claude/skills/chatbot-widget-creator/templates/* src/components/ChatWidget/
 ```
 
 ### 2. Backend API Requirements
 
-Your backend must implement:
+Your backend must implement **immediate streaming**:
 
 ```python
-@app.post("/api/chat")
-async def chat_endpoint(request: ChatRequest):
-    """Chat endpoint with Server-Sent Events streaming."""
+@app.post("/chat")
+async def chat_stream(request: ChatRequest):
+    async def generate_response():
+        # 1. Send metadata IMMEDIATELY
+        yield f"data: {json.dumps({'type': 'metadata'})}\n\n"
 
-    # Request format
-    {
-        "question": "What is physical AI?",
-        "stream": true,
-        "context": {  # Optional
-            "selectedText": "...",
-            "source": "User selection"
-        }
-    }
+        # 2. Start retrieval in background (don't await)
+        retrieval_task = asyncio.create_task(retrieval_pipeline.retrieve(query))
 
-    # Response format (SSE)
-    data: {"type": "start", "session_id": "..."}
-    data: {"type": "chunk", "content": "Physical AI refers to..."}
-    data: {"type": "chunk", "content": "embodied AI systems..."}
-    data: {"type": "done", "session_id": "..."}
+        # 3. Start LLM NOW - don't wait for retrieval
+        yield f"data: {json.dumps({'type': 'answer_start'})}\n\n"
+
+        async for chunk in llm_service.generate_answer(query, context=[], stream=True):
+            yield f"data: {json.dumps({'type': 'answer_chunk', 'content': chunk})}\n\n"
+
+        # 4. Complete
+        yield f"data: {json.dumps({'type': 'complete'})}\n\n"
+
+        # 5. Wait for retrieval in background (optional)
+        await asyncio.wait_for(retrieval_task, timeout=5.0)
+
+    return StreamingResponse(generate_response(), media_type="text/event-stream")
 ```
 
 ### 3. Integration
@@ -105,25 +211,13 @@ Add to your site root (e.g., `src/theme/Root.tsx`):
 
 ```tsx
 import React from 'react';
-import AnimatedChatWidget from '../components/ChatWidget/components/AnimatedChatWidget';
+import ChatWidget from '../components/ChatWidget';
 
 export default function Root({ children }) {
-  const getChatEndpoint = () => {
-    const hostname = window.location.hostname;
-    if (hostname === 'localhost') {
-      return 'http://localhost:7860/api/chat';
-    }
-    return 'https://your-domain.com/api/chat';
-  };
-
   return (
     <>
       {children}
-      <AnimatedChatWidget
-        apiUrl={getChatEndpoint()}
-        maxTextSelectionLength={2000}
-        fallbackTextLength={5000}
-      />
+      <ChatWidget />
     </>
   );
 }
@@ -131,176 +225,104 @@ export default function Root({ children }) {
 
 ## Architecture Details
 
-### State Management (Critical for Performance)
-
-```typescript
-// Consolidated state to prevent fragmentation
-interface ChatState {
-  messages: ChatMessage[];
-  isOpen: boolean;
-  isThinking: boolean;
-  currentStreamingId?: string;
-  error: Error | null;
-  renderCount: number;
-}
-
-// Split context pattern
-const ChatStateContext = createContext<{ state: ChatState }>();
-const ChatActionsContext = createContext<{ actions: ChatActions }>();
-
-// Components only subscribe to what they need
-const messages = useChatSelector(s => s.messages);  // Re-renders on messages change
-const actions = useChatActions();                   // Never re-renders
-```
-
-### Key Anti-Patterns Avoided
-
-1. **❌ Multiple useState hooks**:
-   ```typescript
-   // Bad - causes context fragmentation
-   const [messages, setMessages] = useState([]);
-   const [isOpen, setIsOpen] = useState(false);
-   ```
-
-2. **✅ Consolidated useReducer**:
-   ```typescript
-   // Good - single state source
-   const [state, dispatch] = useReducer(chatReducer, initialState);
-   ```
-
-3. **❌ Circular dependencies**:
-   ```typescript
-   // Bad - callback depends on state that changes
-   const handleChunk = useCallback((chunk) => {
-     if (session.currentStreamingId) {  // Dependency on state
-       updateMessage(session.currentStreamingId, chunk);
-     }
-   }, [session.currentStreamingId]); // Infinite re-render!
-   ```
-
-4. **✅ Stable references**:
-   ```typescript
-   // Good - no circular dependencies
-   const streamingIdRef = useRef<string>();
-   const handleChunk = useCallback((chunk) => {
-     if (streamingIdRef.current) {
-       dispatch(updateStreamingAction(streamingIdRef.current, chunk));
-     }
-   }, [dispatch]); // Stable dependency array
-   ```
-
-### Streaming Response Handling
-
-```typescript
-// Proper SSE parsing
-const lines = chunk.split('\n');
-for (const line of lines) {
-  if (line.startsWith('data: ')) {
-    const data = line.slice(6);
-    if (data !== '[DONE]') {
-      const parsed = JSON.parse(data);
-
-      if (parsed.type === 'chunk' && parsed.content) {
-        handleChunk(parsed.content);
-      } else if (parsed.type === 'done') {
-        handleComplete();
-      }
-    }
-  }
-}
-```
-
-## Customization Guide
-
-### Theming
-
-Edit `src/components/ChatWidget/styles/ChatWidget.module.css`:
-
-```css
-/* Primary colors */
-.widget {
-  background: #171717; /* Dark mode background */
-  width: 380px;
-  height: 700px;
-}
-
-/* Message bubbles */
-.userMessageBubble {
-  background: var(--ifm-color-primary); /* Theme integration */
-  color: white;
-}
-
-.aiMessageBubble {
-  background: #21262d;
-  border: 1px solid #30363d;
-}
-```
-
-## Component Reference
-
 ### Core Components
 
-1. **AnimatedChatWidget**: Main entry point with animations
-2. **ChatInterface**: ChatGPT-style UI container
-3. **MessageBubble**: Individual message display (React.memo optimized)
-4. **InputArea**: Message input (No file upload)
-5. **SelectionTooltip**: Text selection "Ask AI" tooltip
-6. **ThinkingIndicator**: Minimalist 3-dot pulsing animation
+1. **ChatWidget**: Main entry point with ChatProvider
+2. **ChatInterface**: Chat UI container
+3. **MessageBubble**: Message display (React.memo optimized)
+4. **MessageInput**: User input with submit handler
+5. **ThinkingIndicator**: Loading state indicator
 
 ### Hooks
 
-1. **useChatSession**: Access chat state and actions
-2. **useStreamingResponse**: Handle SSE connections
-3. **useTextSelection**: Detect and handle text selection
-4. **useErrorHandler**: Centralized error management
+1. **useChatStream**: ⭐ **CRITICAL** - Handles SSE with cancellation protection
+2. **useTextSelection**: Detect and handle text selection
+3. **useChatContext**: Access chat state and actions
 
-### Utilities
+### Key Patterns
 
-1. **chatReducer**: State transitions
-2. **api.ts**: API request/response formatting
-3. **animations.ts**: Framer Motion configs
+#### 1. Stable Event Listener Pattern
+```typescript
+// Store callback in ref (updates without re-render)
+const callbackRef = useRef(callback);
+callbackRef.current = callback;
+
+// useEffect only runs once on mount
+useEffect(() => {
+  const handler = (e) => callbackRef.current(e);
+  window.addEventListener('event', handler);
+  return () => window.removeEventListener('event', handler);
+}, []); // Empty deps = runs once
+```
+
+#### 2. Request ID Tracking
+```typescript
+const activeRequestIdRef = useRef<string | null>(null);
+
+const sendRequest = async () => {
+  const requestId = `req_${Date.now()}`;
+  activeRequestIdRef.current = requestId;
+
+  // After async operation starts
+  if (activeRequestIdRef.current === requestId) {
+    // Only set cleanup if this is still the active request
+    cleanupRef.current = cleanup;
+  }
+};
+```
+
+#### 3. Memoized API Client
+```typescript
+const apiClient = useMemo(
+  () => createApiClient(endpoint, apiKey),
+  [endpoint, apiKey] // Only recreate when these change
+);
+```
 
 ## Troubleshooting
 
-### Common Issues and Solutions
+### SSE Cancellation Loop
+**Symptoms**: `[SSE] Starting chat stream`, `[SSE] Cleanup: aborting stream` repeating
 
-1. **Infinite Re-renders**
-   - Check for circular dependencies in useCallback
-   - Ensure split context pattern is properly implemented
-   - Use React DevTools Profiler to identify causes
+**Solutions**:
+1. ✅ Memoize `apiClient` with useMemo
+2. ✅ Use ref for event listener callback
+3. ✅ Add request ID tracking
+4. ✅ Only depend on stable values in useEffect
 
-2. **Memory Leaks**
-   - Ensure AbortController cleanup on unmount
-   - Check for unclosed SSE connections
-   - Monitor with `window.performance.memory`
+### Slow First Response
+**Symptoms**: 8-16 second delay before any text appears
 
-3. **SSE Not Working**
-   - Verify CORS headers include `text/event-stream`
-   - Check that responses use correct `data: {}` format
-   - Ensure `Cache-Control: no-cache` is set
+**Solution**: Backend should start LLM immediately, do retrieval in background
 
-4. **Text Selection Issues**
-   - Verify `useTextSelection` is enabled
-   - Check for CSS `user-select: none` conflicts
-   - Ensure z-index is high enough for tooltip
+### Sources Showing in Answers
+**Symptoms**: Answers include `**Source:** ...` sections
+
+**Solution**: Skip `source` type chunks in frontend handler
+
+### Aborts Logged as Errors
+**Symptoms**: `[SSE] Request cancelled` appears as error
+
+**Solution**: Check `controller.signal.aborted` first, return silently if true
 
 ## Production Checklist
 
-- [ ] Remove console.log statements in production
-- [ ] Add proper error tracking (Sentry, etc.)
-- [ ] Implement rate limiting on backend
-- [ ] Add CORS configuration
+- [ ] Memoize all API clients and expensive computations
+- [ ] Use ref pattern for event listener callbacks
+- [ ] Implement request ID tracking for concurrent requests
+- [ ] Start LLM streaming immediately (don't wait for RAG)
+- [ ] Filter source chunks from display
+- [ ] Proper abort detection (check signal before error handling)
+- [ ] Test with React 18+ StrictMode (double useEffect)
+- [ ] Monitor for memory leaks (unclosed AbortControllers)
 - [ ] Test on slow networks
-- [ ] Verify memory leak prevention
-- [ ] Test with long conversations (100+ messages)
+- [ ] Verify CORS includes `text/event-stream`
 
 ## Result
 
 A production-ready chat widget that:
-- Matches the ChatGPT visual aesthetic
-- Never crashes from infinite re-renders
-- Provides smooth text selection interactions
-- Streams responses efficiently
-- Maintains performance over time
+- Never aborts streams due to re-renders
+- Shows immediate response to user input
+- Displays clean answers without source clutter
 - Handles all edge cases gracefully
-j
+- Maintains performance over time

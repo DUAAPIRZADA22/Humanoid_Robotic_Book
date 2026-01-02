@@ -1,0 +1,548 @@
+"""
+FastAPI backend for Physical AI & Humanoid Robotics book chatbot.
+Provides streaming chat and ingestion endpoints using RAG pipeline.
+"""
+
+import os
+import asyncio
+import json
+from contextlib import asynccontextmanager
+from typing import AsyncGenerator, Dict, Any, List
+import logging
+
+from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
+import uvicorn
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
+from rag.chunking import MarkdownChunker
+from rag.openai_embeddings import OpenAIEmbeddingService
+from rag.openrouter_embeddings import OpenRouterEmbeddingService
+from rag.vector_store_new import QdrantVectorStore
+from rag.retrieval import RetrievalPipeline
+from rag.openrouter_rerank import OpenRouterReranker
+from rag.llm_service import create_llm_service
+
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
+
+# Reduce httpcore debug noise
+logging.getLogger("httpcore.connection").setLevel(logging.WARNING)
+logging.getLogger("httpcore.http11").setLevel(logging.WARNING)
+
+# Global instances
+chunker = None
+embedding_service = None
+vector_store = None
+retrieval_pipeline = None
+reranker = None
+llm_service = None
+
+
+class ChatRequest(BaseModel):
+    """Request model for chat endpoint."""
+    question: str  # Changed from 'query' to match frontend
+    top_k: int = 3  # Reduced from 5 to 3 for speed
+    similarity_threshold: float = 0.4  # Lowered because cosine scores are ~0.5
+    use_rerank: bool = True
+    stream: bool = True  # Added stream parameter from frontend
+
+
+class IngestRequest(BaseModel):
+    """Request model for ingest endpoint."""
+    content_dir: str = "../docs"
+    file_pattern: str = "*.md"
+    overwrite: bool = False
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Initialize and cleanup resources."""
+    global chunker, embedding_service, vector_store, retrieval_pipeline, reranker, llm_service
+
+    # Initialize components
+    logger.info("Initializing RAG pipeline components...")
+
+    chunker = MarkdownChunker(min_chunk_size=50, max_chunk_size=1000)
+
+    # Get API keys with proper error handling
+    openrouter_api_key = os.getenv("OPENROUTER_API_KEY")
+    qdrant_api_key = os.getenv("QDRANT_API_KEY")
+    qdrant_url = os.getenv("QDRANT_URL")
+
+    if not openrouter_api_key:
+        raise ValueError("OPENROUTER_API_KEY environment variable is required")
+
+    # Initialize embedding service using OpenRouter
+    embedding_service = OpenRouterEmbeddingService(
+        api_key=openrouter_api_key,
+        model="openai/text-embedding-3-small",
+        base_url=os.getenv("OPENROUTER_BASE_URL")
+    )
+    logger.info("Using OpenRouter for embeddings")
+
+    # Initialize vector store with OpenRouter embedding dimension (1536)
+    if qdrant_url:
+        vector_store = QdrantVectorStore(
+            collection_name="humanoid_robotics_book_openrouter",
+            embedding_dim=1536,  # OpenRouter OpenAI text-embedding-3-small dimension
+            url=qdrant_url,
+            api_key=qdrant_api_key
+        )
+    else:
+        vector_store = QdrantVectorStore(
+            collection_name="humanoid_robotics_book_openrouter",
+            embedding_dim=1536,  # OpenRouter OpenAI text-embedding-3-small dimension
+            host=os.getenv("QDRANT_HOST", "localhost"),
+            port=int(os.getenv("QDRANT_PORT", "6333")),
+            api_key=qdrant_api_key
+        )
+
+    # Initialize OpenRouter reranker
+    try:
+        reranker = OpenRouterReranker(
+            api_key=openrouter_api_key,
+            model="openai/text-embedding-3-small",
+            top_n=5,
+            timeout=60,
+            base_url=os.getenv("OPENROUTER_BASE_URL")
+        )
+        logger.info("OpenRouter reranker initialized successfully")
+    except Exception as e:
+        logger.warning(f"Failed to initialize OpenRouter reranker: {e}")
+        reranker = None
+    retrieval_pipeline = RetrievalPipeline(
+        embedding_service=embedding_service,
+        vector_store=vector_store,
+        reranker=reranker
+    )
+
+    # Initialize LLM service using OpenRouter
+    try:
+        llm_service = create_llm_service({
+            "provider": "openrouter",
+            "model": "mistralai/devstral-2512:free",
+            "api_key": openrouter_api_key,
+            "base_url": os.getenv("OPENROUTER_BASE_URL"),
+            "max_tokens": 1000,
+            "temperature": 0.7
+        })
+        logger.info("LLM service initialized successfully with OpenRouter (Free Mistral)")
+    except Exception as e:
+        logger.warning(f"Failed to initialize LLM service: {e}")
+        logger.warning("Chat will return retrieved chunks without generated answers")
+        llm_service = None
+
+    # Ensure collection exists
+    await vector_store.ensure_collection()
+    logger.info("RAG pipeline initialized successfully")
+
+    yield
+
+    logger.info("Shutting down RAG pipeline...")
+
+
+# Create FastAPI app
+app = FastAPI(
+    title="Physical AI & Humanoid Robotics Book Chatbot",
+    description="RAG-powered chatbot backend for the Physical AI & Humanoid Robotics book",
+    version="1.0.0",
+    lifespan=lifespan
+)
+
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:8000",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:8000",
+        "https://humanoid-robotic-book.vercel.app"
+    ],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["*"],
+)
+
+
+@app.post("/ingest")
+async def ingest_content(request: IngestRequest, background_tasks: BackgroundTasks) -> Dict[str, Any]:
+    """
+    Ingest book content into vector store.
+    """
+    if not chunker or not embedding_service or not vector_store:
+        raise HTTPException(status_code=503, detail="RAG pipeline not initialized")
+
+    content_path = os.path.abspath(request.content_dir)
+    if not os.path.exists(content_path):
+        raise HTTPException(status_code=404, detail=f"Content directory not found: {content_path}")
+
+    # Run ingestion in background
+    background_tasks.add_task(
+        run_ingestion,
+        content_path,
+        request.file_pattern,
+        request.overwrite
+    )
+
+    return {
+        "status": "started",
+        "message": f"Ingestion started for directory: {content_path}",
+        "pattern": request.file_pattern,
+        "overwrite": request.overwrite
+    }
+
+
+async def run_ingestion(content_dir: str, file_pattern: str, overwrite: bool) -> None:
+    """Run the ingestion process."""
+    try:
+        logger.info(f"Starting ingestion from {content_dir} with pattern {file_pattern}")
+
+        # Get all markdown files
+        import glob
+        file_paths = glob.glob(os.path.join(content_dir, file_pattern))
+
+        if not file_paths:
+            logger.warning(f"No files found matching pattern {file_pattern} in {content_dir}")
+            return
+
+        # Process each file
+        total_chunks = 0
+        for file_path in file_paths:
+            logger.info(f"Processing file: {file_path}")
+
+            # Read file content
+            with open(file_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+
+            # Chunk content
+            chunks = chunker.chunk_document(content, source=file_path)
+            if not chunks:
+                logger.warning(f"No chunks generated for file: {file_path}")
+                continue
+
+            # Create embeddings
+            texts = [chunk.text for chunk in chunks]
+            embeddings = await embedding_service.embed_texts(texts)
+
+            # Prepare for vector store
+            import uuid
+            documents = []
+            for i, (chunk, embedding) in enumerate(zip(chunks, embeddings)):
+                documents.append({
+                    "id": str(uuid.uuid4()),
+                    "text": chunk.text,
+                    "metadata": {
+                        "source": file_path,
+                        "chunk_index": i,
+                        "page_numbers": chunk.metadata.get("page_numbers", []),
+                        "headers": chunk.metadata.get("headers", [])
+                    },
+                    "vector": embedding
+                })
+
+            # Upsert to vector store
+            if overwrite:
+                # Skip deletion due to Qdrant index limitations - just overwrite
+                logger.info(f"[INGEST DEBUG] Skipping deletion due to Qdrant index limitations, overwriting content")
+                # TODO: Fix Qdrant metadata indexing for proper overwrite functionality
+
+            await vector_store.upsert(documents)
+            total_chunks += len(documents)
+
+            logger.info(f"Processed {len(documents)} chunks from {file_path}")
+
+        logger.info(f"Ingestion complete. Total chunks processed: {total_chunks}")
+
+    except Exception as e:
+        logger.error(f"Error during ingestion: {str(e)}", exc_info=True)
+
+
+@app.post("/chat")
+async def chat_stream(request: ChatRequest) -> StreamingResponse:
+    """
+    Stream chat responses using Server-Sent Events (SSE).
+    """
+    if not retrieval_pipeline:
+        raise HTTPException(status_code=503, detail="RAG pipeline not initialized")
+
+    async def generate_response() -> AsyncGenerator[str, None]:
+        """Generate streaming response."""
+        try:
+            # Send initial metadata IMMEDIATELY - before any slow operations
+            # CRITICAL: This MUST be flushed immediately to prevent frontend timeout
+            metadata = {
+                "type": "metadata",
+                "query": request.question,
+                "top_k": request.top_k,
+                "similarity_threshold": request.similarity_threshold,
+                "use_rerank": request.use_rerank
+            }
+            yield f"data: {json.dumps(metadata)}\n\n"
+            # Force immediate flush - this ensures metadata is sent to client NOW
+            # Without this, the generator buffers the yield and frontend times out
+            await asyncio.sleep(0)
+
+            # Retrieve relevant chunks with timeout
+            logger.info(f"[CHAT DEBUG] Starting retrieval for query: '{request.question}'")
+            logger.info(f"[CHAT DEBUG] Parameters - top_k: {request.top_k}, threshold: {request.similarity_threshold}, use_rerank: {request.use_rerank}")
+
+            try:
+                logger.info(f"[CHAT DEBUG] Calling retrieval_pipeline.retrieve()...")
+                results = await asyncio.wait_for(
+                    retrieval_pipeline.retrieve(
+                        query=request.question,
+                        top_k=request.top_k * 2,  # Fetch 2x for deduplication
+                        similarity_threshold=request.similarity_threshold
+                    ),
+                    timeout=8.0  # 8 second timeout for retrieval
+                )
+                logger.info(f"[CHAT DEBUG] Retrieval completed. Found {len(results)} raw results")
+
+                # Debug: Log first few results
+                if results:
+                    for i, result in enumerate(results[:3]):
+                        logger.info(f"[CHAT DEBUG] Result {i+1}: score={result.get('score', 0):.4f}, text='{result.get('text', '')[:100]}...'")
+                else:
+                    logger.warning("[CHAT DEBUG] No results found from retrieval pipeline")
+
+            except asyncio.TimeoutError:
+                logger.error("[CHAT DEBUG] Document retrieval timed out after 8 seconds")
+                results = []
+
+            # Apply deduplication
+            logger.info(f"[CHAT DEBUG] Starting deduplication on {len(results)} results...")
+            unique_results = []
+            seen_texts = set()
+            for result in results:
+                text_hash = hash(result["text"])
+                if text_hash not in seen_texts:
+                    seen_texts.add(text_hash)
+                    unique_results.append(result)
+                    if len(unique_results) >= request.top_k:
+                        break
+
+            logger.info(f"[CHAT DEBUG] After deduplication: {len(unique_results)} unique results")
+
+            # Apply reranking only if worthwhile (enough documents to make reranking valuable)
+            # This saves API calls when results are already limited
+            if request.use_rerank and unique_results and reranker and len(unique_results) > 3:
+                logger.info(f"[CHAT DEBUG] Starting reranking with {len(unique_results)} documents...")
+                try:
+                    reranked_results = await asyncio.wait_for(
+                        reranker.rerank(
+                            query=request.question,
+                            documents=unique_results,
+                            top_n=request.top_k
+                        ),
+                        timeout=8.0  # 8 second timeout for reranking
+                    )
+                    logger.info(f"[CHAT DEBUG] Reranking completed successfully")
+                    # Debug: Log reranked scores
+                    for i, result in enumerate(reranked_results[:3]):
+                        logger.info(f"[CHAT DEBUG] Reranked {i+1}: relevance_score={result.get('relevance_score', 0):.4f}, text='{result.get('text', '')[:100]}...'")
+                    unique_results = reranked_results
+                except asyncio.TimeoutError:
+                    logger.error("[CHAT DEBUG] Reranking timed out after 8 seconds, using original results")
+                    # Continue with original results without reranking
+            else:
+                if not request.use_rerank:
+                    logger.info("[CHAT DEBUG] Reranking disabled by user request")
+                elif not unique_results:
+                    logger.info("[CHAT DEBUG] Skipping reranking - no documents to rank")
+                elif not reranker:
+                    logger.warning("[CHAT DEBUG] Skipping reranking - reranker service not available")
+
+            # Generate answer using LLM if available, otherwise return raw chunks
+            if llm_service and unique_results:
+                logger.info(f"[CHAT DEBUG] Starting LLM answer generation with {len(unique_results)} context documents...")
+
+                # Truncate context to prevent timeout
+                max_context_length = 2000  # Limit total context length
+                truncated_results = []
+                current_length = 0
+
+                for result in unique_results:
+                    text = result["text"]
+                    # Truncate individual chunks if too long
+                    if len(text) > 500:
+                        text = text[:500] + "..."
+                        logger.debug(f"[CHAT DEBUG] Truncated document from {len(result['text'])} to {len(text)} characters")
+
+                    if current_length + len(text) < max_context_length:
+                        result_copy = result.copy()
+                        result_copy["text"] = text
+                        truncated_results.append(result_copy)
+                        current_length += len(text)
+                    else:
+                        break
+
+                logger.info(f"[CHAT DEBUG] Context prepared: {len(truncated_results)} documents, {current_length} total characters")
+
+                # Send context chunks first for transparency
+                logger.info(f"[CHAT DEBUG] Sending {len(truncated_results)} source chunks to client...")
+                for i, result in enumerate(truncated_results):
+                    chunk_data = {
+                        "type": "source",
+                        "index": i,
+                        "content": result["text"],
+                        "score": result.get("relevance_score", result.get("score", 0.0)),
+                        "source": result.get("metadata", {}).get("source", ""),
+                        "headers": result.get("metadata", {}).get("headers", [])
+                    }
+                    yield f"data: {json.dumps(chunk_data)}\n\n"
+                    logger.debug(f"[CHAT DEBUG] Sent source {i+1}: score={chunk_data['score']:.4f}, length={len(chunk_data['content'])}")
+                    # Flush to ensure immediate delivery
+                    await asyncio.sleep(0.01)
+
+                # Generate and stream the answer
+                logger.info(f"[CHAT DEBUG] Starting LLM generation with OpenRouter...")
+                yield f"data: {json.dumps({'type': 'answer_start'})}\n\n"
+
+                answer_content = ""
+                chunk_count = 0
+                try:
+                    async for chunk in llm_service.generate_answer(
+                        query=request.question,
+                        context=truncated_results,  # Use truncated results
+                        stream=True
+                    ):
+                        if chunk and not chunk.startswith("Error"):
+                            answer_content += chunk
+                            chunk_count += 1
+                            chunk_data = {
+                                "type": "answer_chunk",
+                                "content": chunk
+                            }
+                            yield f"data: {json.dumps(chunk_data)}\n\n"
+                            if chunk_count <= 5:  # Log first few chunks
+                                logger.debug(f"[CHAT DEBUG] LLM chunk {chunk_count}: '{chunk[:50]}...'")
+                        elif chunk and chunk.startswith("Error"):
+                            logger.error(f"[CHAT DEBUG] LLM generated error: {chunk}")
+                            break
+
+                    logger.info(f"[CHAT DEBUG] LLM generation completed: {chunk_count} chunks, {len(answer_content)} characters")
+
+                except Exception as e:
+                    logger.error(f"[CHAT DEBUG] LLM generation failed: {str(e)}")
+                    answer_content = f"Error generating response: {str(e)}"
+
+                # Send completion with answer summary
+                completion = {
+                    "type": "complete",
+                    "total_sources": len(unique_results),
+                    "has_answer": True,
+                    "answer_length": len(answer_content),
+                    "message": "Response generation complete"
+                }
+                logger.info(f"[CHAT DEBUG] Sending completion: {len(answer_content)} chars, {len(unique_results)} sources")
+            else:
+                # Fallback to raw chunks if no LLM service
+                logger.info(f"[CHAT DEBUG] Using fallback mode - no LLM service available")
+                logger.debug(f"[CHAT DEBUG] Available services: llm_service={bool(llm_service)}, results_count={len(unique_results)}")
+
+                for i, result in enumerate(unique_results):
+                    chunk_data = {
+                        "type": "content",
+                        "index": i,
+                        "content": result["text"],
+                        "score": result.get("relevance_score", result.get("score", 0.0)),
+                        "source": result.get("metadata", {}).get("source", ""),
+                        "headers": result.get("metadata", {}).get("headers", [])
+                    }
+                    yield f"data: {json.dumps(chunk_data)}\n\n"
+                    logger.debug(f"[CHAT DEBUG] Fallback chunk {i+1}: score={chunk_data['score']:.4f}, length={len(chunk_data['content'])}")
+                    await asyncio.sleep(0.1)
+
+                completion = {
+                    "type": "complete",
+                    "total_chunks": len(unique_results),
+                    "has_answer": False,
+                    "message": "Retrieved chunks without LLM generation"
+                }
+                logger.info(f"[CHAT DEBUG] Fallback completed: {len(unique_results)} chunks sent")
+
+            yield f"data: {json.dumps(completion)}\n\n"
+
+        except Exception as e:
+            error_data = {
+                "type": "error",
+                "message": str(e)
+            }
+            yield f"data: {json.dumps(error_data)}\n\n"
+
+    return StreamingResponse(
+        generate_response(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",  # Disable nginx buffering
+        }
+    )
+
+
+@app.get("/health")
+async def health_check() -> Dict[str, Any]:
+    """Health check endpoint."""
+    health_status = {
+        "status": "healthy",
+        "components": {
+            "chunker": chunker is not None,
+            "embedding_service": embedding_service is not None,
+            "vector_store": vector_store is not None,
+            "retrieval_pipeline": retrieval_pipeline is not None,
+            "reranker": reranker is not None,
+            "llm_service": llm_service is not None
+        }
+    }
+
+    # Check LLM service health if available
+    if llm_service:
+        try:
+            llm_health = await llm_service.health_check()
+            health_status["llm_health"] = llm_health
+        except Exception as e:
+            health_status["llm_health"] = {
+                "status": "unhealthy",
+                "error": str(e)
+            }
+
+    return health_status
+
+
+@app.get("/")
+async def root():
+    """Root endpoint."""
+    return {
+        "message": "Physical AI & Humanoid Robotics Book Chatbot API",
+        "version": "1.0.0",
+        "docs": "/docs",
+        "endpoints": {
+            "chat": "/chat",
+            "ingest": "/ingest",
+            "health": "/health"
+        }
+    }
+
+
+if __name__ == "__main__":
+    # Run the app
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=8000,  # Use different port to avoid conflicts
+        reload=False,
+        access_log=True
+    )

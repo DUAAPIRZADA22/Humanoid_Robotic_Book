@@ -3,58 +3,105 @@
  * @fileoverview CSS utilities for glass-like visual effects
  */
 
-/* Base glass card effect */
+/* Base glass card effect - Light Girlish Theme */
 .glass-card {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 246, 250, 0.85);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.125);
-  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  border: 1px solid rgba(236, 72, 153, 0.2);
+  box-shadow: 0 8px 32px 0 rgba(236, 72, 153, 0.25);
 }
 
-/* Dark theme glass variants */
+/* Dark theme glass variants - Enhanced visibility */
 [data-theme='dark'] .glass-card-dark {
   background: rgba(0, 0, 0, 0.25);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(236, 72, 153, 0.2);
   box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+/* Dark theme input styling - Maximum visibility */
+[data-theme='dark'] .glass-input {
+  background: #1a1a1a !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(236, 72, 153, 0.3);
+  font-weight: 500;
+}
+
+[data-theme='dark'] .glass-input::placeholder {
+  color: #f1f5f9 !important;
+}
+
+/* Dark theme message bubbles - Maximum visibility */
+[data-theme='dark'] .glass-bubble {
+  background: #1a1a1a !important;
+  border: 1px solid rgba(236, 72, 153, 0.2);
+  color: #ffffff !important;
+}
+
+/* Dark theme chat components backgrounds */
+[data-theme='dark'] .glass-card {
+  background: #1a1a1a !important;
+  border: 1px solid rgba(236, 72, 153, 0.2) !important;
+}
+
+[data-theme='dark'] .chatInterface {
+  background: #1a1a1a !important;
+  border: 1px solid rgba(236, 72, 153, 0.2) !important;
+}
+
+/* Dark theme all chat components */
+[data-theme='dark'] .chatInterface,
+[data-theme='dark'] .messageBubble,
+[data-theme='dark'] .messageInput,
+[data-theme='dark'] .chatHeader {
+  color: #ffffff !important;
+}
+
+[data-theme='dark'] .messageBubble p,
+[data-theme='dark'] .messageBubble span,
+[data-theme='dark'] .messageBubble div {
+  color: #f1f5f9 !important;
 }
 
 /* Light theme glass variants */
 [data-theme='light'] .glass-card-light {
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 246, 250, 0.8);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(0, 0, 0, 0.125);
-  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+  border: 1px solid rgba(236, 72, 153, 0.15);
+  box-shadow: 0 8px 32px 0 rgba(236, 72, 153, 0.12);
 }
 
 /* Glass input field */
 .glass-input {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 246, 250, 0.6);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: inherit;
+  border: 1px solid rgba(236, 72, 153, 0.2);
+  color: #000000;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
 }
 
 .glass-input::placeholder {
-  color: rgba(255, 255, 255, 0.6);
+  color: #1a1a1a;
+  font-family: 'Inter', sans-serif;
 }
 
 /* Glass button */
 .glass-button {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(236, 72, 153, 0.15);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(236, 72, 153, 0.2);
   transition: all 0.2s ease;
 }
 
 .glass-button:hover {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(236, 72, 153, 0.25);
+  border-color: rgba(236, 72, 153, 0.3);
 }
 
 /* Glass message bubble */
@@ -126,6 +173,96 @@
     -webkit-backdrop-filter: none;
     background: rgba(255, 255, 255, 0.95);
   }
+}
+
+/* Enhanced theme-specific chat widget styling */
+[data-theme='light'] .chatInterface {
+  background: rgba(255, 246, 250, 0.95) !important;
+  border: 1px solid rgba(236, 72, 153, 0.25) !important;
+  box-shadow: 0 20px 60px rgba(236, 72, 153, 0.3) !important;
+}
+
+[data-theme='light'] .messageBubble p,
+[data-theme='light'] .messageBubble span,
+[data-theme='light'] .messageBubble div,
+[data-theme='light'] .messageInput {
+  color: #1a1a1a !important;
+}
+
+[data-theme='light'] .header {
+  background: rgba(236, 72, 153, 0.1) !important;
+  border-bottom: 1px solid rgba(236, 72, 153, 0.2) !important;
+}
+
+[data-theme='light'] .inputContainer {
+  background: rgba(236, 72, 153, 0.05) !important;
+  border-top: 1px solid rgba(236, 72, 153, 0.2) !important;
+}
+
+[data-theme='light'] .textarea {
+  background: rgba(255, 255, 255, 0.8) !important;
+  border: 1px solid rgba(236, 72, 153, 0.3) !important;
+  color: #1a1a1a !important;
+}
+
+[data-theme='light'] .textarea::placeholder {
+  color: #64748b !important;
+}
+
+[data-theme='light'] .userMessage {
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.6), rgba(192, 132, 252, 0.6)) !important;
+  color: #ffffff !important;
+}
+
+[data-theme='light'] .assistantMessage {
+  background: rgba(255, 255, 255, 0.9) !important;
+  color: #1a1a1a !important;
+  border: 1px solid rgba(236, 72, 153, 0.2) !important;
+}
+
+/* Enhanced dark theme chat widget styling */
+[data-theme='dark'] .chatInterface {
+  background: rgba(26, 26, 26, 0.95) !important;
+  border: 1px solid rgba(236, 72, 153, 0.3) !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5) !important;
+}
+
+[data-theme='dark'] .messageBubble p,
+[data-theme='dark'] .messageBubble span,
+[data-theme='dark'] .messageBubble div,
+[data-theme='dark'] .messageInput {
+  color: #ffffff !important;
+}
+
+[data-theme='dark'] .header {
+  background: rgba(236, 72, 153, 0.15) !important;
+  border-bottom: 1px solid rgba(236, 72, 153, 0.3) !important;
+}
+
+[data-theme='dark'] .inputContainer {
+  background: rgba(236, 72, 153, 0.1) !important;
+  border-top: 1px solid rgba(236, 72, 153, 0.3) !important;
+}
+
+[data-theme='dark'] .textarea {
+  background: rgba(26, 26, 26, 0.8) !important;
+  border: 1px solid rgba(236, 72, 153, 0.4) !important;
+  color: #ffffff !important;
+}
+
+[data-theme='dark'] .textarea::placeholder {
+  color: #cbd5e1 !important;
+}
+
+[data-theme='dark'] .userMessage {
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.7), rgba(192, 132, 252, 0.7)) !important;
+  color: #ffffff !important;
+}
+
+[data-theme='dark'] .assistantMessage {
+  background: rgba(26, 26, 26, 0.8) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(236, 72, 153, 0.3) !important;
 }
 
 /* Fallback for browsers without backdrop-filter support */

@@ -29,7 +29,7 @@
 **Independent Test Criteria**: Readers can create a simple robot simulation in Isaac Sim, control it via ROS 2, and collect sensor data
 
 ### Models and Core Components
-- [ ] T015 [US1] Create Isaac Sim scene template in examples/isaac_sim/base_scene.py
+- [x] T015 [US1] Create Isaac Sim scene template in examples/isaac_sim/base_scene.py
 - [ ] T016 [US1] Implement robot asset loader in examples/isaac_sim/asset_loader.py
 - [ ] T017 [US1] Create sensor simulation interface in examples/isaac_sim/sensors.py
 
@@ -45,8 +45,8 @@
 
 ### Documentation and Examples
 - [x] T024 [P] [US1] Create getting started tutorial in examples/isaac_sim/README.md
-- [ ] T025 [P] [US1] Write custom robot example in examples/isaac_sim/custom_robot.py
-- [ ] T026 [P] [US1] Create sensor configuration examples in examples/isaac_sim/sensor_configs/
+- [x] T025 [P] [US1] Write custom robot example in examples/isaac_sim/custom_robot.py
+- [x] T026 [P] [US1] Create sensor configuration examples in examples/isaac_sim/sensor_configs/
 
 ## Phase 4: User Story 2 - Visual SLAM & Navigation (Chapter 9)
 

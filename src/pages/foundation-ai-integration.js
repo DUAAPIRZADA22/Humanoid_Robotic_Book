@@ -16,7 +16,7 @@ export default function FoundationAIIntegration() {
             <h1>Foundation AI Integration</h1>
             <p>Explore the cutting-edge intersection of artificial intelligence and humanoid robotics, where intelligent algorithms bring machines to life.</p>
             <div className={styles.heroButtons}>
-              <Link to="/docs/module-3/ai-integration" className="button button--primary button--lg">
+              <Link to="/docs/module-3/control" className="button button--primary button--lg">
                 Start Learning
               </Link>
               <Link to="/docs/intro" className="button button--secondary button--lg">
@@ -68,7 +68,7 @@ export default function FoundationAIIntegration() {
                   <li>Transformer Architectures</li>
                   <li>Reinforcement Learning Basics</li>
                 </ul>
-                <Link to="/docs/module-3/neural-networks" className={styles.moduleLink}>
+                <Link to="/docs/module-2/part4-ai-brain/chapter-8-nvidia-isaac-sim" className={styles.moduleLink}>
                   Explore Module →
                 </Link>
               </div>
@@ -85,7 +85,7 @@ export default function FoundationAIIntegration() {
                   <li>Object Detection & Tracking</li>
                   <li>SLAM Algorithms</li>
                 </ul>
-                <Link to="/docs/module-3/perception" className={styles.moduleLink}>
+                <Link to="/docs/module-2/part1-foundations/chapter-2-sensors-perception" className={styles.moduleLink}>
                   Explore Module →
                 </Link>
               </div>
@@ -102,7 +102,7 @@ export default function FoundationAIIntegration() {
                   <li>Optimal Control Theory</li>
                   <li>Adaptive Control Systems</li>
                 </ul>
-                <Link to="/docs/module-3/motion-planning" className={styles.moduleLink}>
+                <Link to="/docs/module-3/control" className={styles.moduleLink}>
                   Explore Module →
                 </Link>
               </div>
@@ -119,7 +119,7 @@ export default function FoundationAIIntegration() {
                   <li>Social Robotics Principles</li>
                   <li>Emotion Recognition</li>
                 </ul>
-                <Link to="/docs/module-3/hri" className={styles.moduleLink}>
+                <Link to="/docs/module-4/applications" className={styles.moduleLink}>
                   Explore Module →
                 </Link>
               </div>
@@ -195,7 +195,7 @@ export default function FoundationAIIntegration() {
             <div className={styles.quickStartCard}>
               <h3>Ready to Start?</h3>
               <p>Begin your journey into AI-powered humanoid robotics with our comprehensive guide.</p>
-              <Link to="/docs/module-3/setup" className="button button--primary button--lg">
+              <Link to="/docs/module-1/setup" className="button button--primary button--lg">
                 Quick Start Guide
               </Link>
             </div>
@@ -237,7 +237,7 @@ export default function FoundationAIIntegration() {
           </div>
         </section>
       </div>
-      <ChatWidget />
+      <ChatWidget defaultOpen={false} />
     </Layout>
   );
 }
