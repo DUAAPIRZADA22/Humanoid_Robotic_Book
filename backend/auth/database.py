@@ -58,7 +58,9 @@ def get_session():
     Yields:
         Database session
     """
-    with Session(engine) as session:
+    # Get the real engine, not the lazy descriptor
+    real_engine = _get_engine()
+    with Session(real_engine) as session:
         yield session
 
 
@@ -70,7 +72,9 @@ def init_db():
     """
     from .models import SQLModel, User, UserPreferences, Session, PasswordResetToken
 
-    SQLModel.metadata.create_all(engine)
+    # Get the real engine, not the lazy descriptor
+    real_engine = _get_engine()
+    SQLModel.metadata.create_all(real_engine)
 
 
 __all__ = [

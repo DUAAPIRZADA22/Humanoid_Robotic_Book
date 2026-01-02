@@ -31,25 +31,32 @@ logger = logging.getLogger(__name__)
 logging.getLogger("httpcore.connection").setLevel(logging.WARNING)
 logging.getLogger("httpcore.http11").setLevel(logging.WARNING)
 
-# NOTE: Auth module temporarily disabled due to psycopg2 dependency issues
-# Auth will be re-enabled once Railway caching is resolved or psycopg2 is installed
-AUTH_AVAILABLE = False
-get_current_user_optional = None
-auth_router = None
-init_db = None
+# Import auth module
+try:
+    from auth.database import init_db
+    from auth.dependencies import get_current_user_optional
+    from auth.routes import router as auth_router
+    from auth.models import User
+    AUTH_AVAILABLE = True
+    logger.info("Auth module imported successfully")
+except ImportError as e:
+    logger.warning(f"Could not import auth module: {e}")
+    AUTH_AVAILABLE = False
+    get_current_user_optional = None
+    auth_router = None
+    init_db = None
 
-# Create stub User type for type hints when auth is disabled
-class User:
-    """Stub User class for type hints when auth is disabled."""
-    id: str = "anonymous"
-    email: str = "anonymous@example.com"
+    # Create stub User type for type hints when auth is disabled
+    class User:
+        """Stub User class for type hints when auth is disabled."""
+        id: str = "anonymous"
+        email: str = "anonymous@example.com"
 
-# Create no-op dependency for when auth is disabled
-async def _no_auth_user() -> User | None:
-    return None
-get_current_user_optional = _no_auth_user
-
-logger.info("Auth module disabled - running without authentication")
+    # Create no-op dependency for when auth is disabled
+    async def _no_auth_user() -> User | None:
+        return None
+    get_current_user_optional = _no_auth_user
+    logger.info("Auth module disabled - running without authentication")
 
 from rag.chunking import MarkdownChunker
 from rag.openai_embeddings import OpenAIEmbeddingService
